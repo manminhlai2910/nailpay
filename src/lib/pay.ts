@@ -75,3 +75,33 @@ export function groupByDay(services: Service[], month?: string): DayGroup[] {
     .sort(([a], [b]) => (a < b ? 1 : a > b ? -1 : 0))
     .map(([date, list]) => ({ date, services: list, totalCents: sumPrices(list) }))
 }
+
+export interface MonthlyPayInput {
+  servicesTotalCents: number
+  commissionRate: number // whole percent, e.g. 60
+  rentCents: number
+  owedFromLastMonthCents: number
+  paymentsCents: number
+}
+
+export interface MonthlyPay {
+  commissionCents: number
+  netEarnedCents: number
+  totalDueCents: number
+  carryForwardCents: number // negative means overpaid
+}
+
+/** Commission minus rent, plus last month's balance, minus payments received. */
+export function calculateMonthlyPay({
+  servicesTotalCents,
+  commissionRate,
+  rentCents,
+  owedFromLastMonthCents,
+  paymentsCents,
+}: MonthlyPayInput): MonthlyPay {
+  const commissionCents = Math.round((servicesTotalCents * commissionRate) / 100)
+  const netEarnedCents = commissionCents - rentCents
+  const totalDueCents = netEarnedCents + owedFromLastMonthCents
+  const carryForwardCents = totalDueCents - paymentsCents
+  return { commissionCents, netEarnedCents, totalDueCents, carryForwardCents }
+}

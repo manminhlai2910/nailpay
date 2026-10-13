@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  calculateMonthlyPay,
   dayTotal,
   formatMoney,
   groupByDay,
@@ -106,5 +107,46 @@ describe('groupByDay', () => {
     expect(groups.map((g) => g.date)).toEqual(['2026-10-15', '2026-10-01'])
     expect(groups[1].services).toHaveLength(3)
     expect(groups[1].totalCents).toBe(16000)
+  })
+})
+
+describe('calculateMonthlyPay', () => {
+  const base = {
+    servicesTotalCents: 620000,
+    commissionRate: 60,
+    rentCents: 50000,
+    owedFromLastMonthCents: 15000,
+    paymentsCents: 300000,
+  }
+
+  it('matches the spec test case', () => {
+    expect(calculateMonthlyPay(base)).toEqual({
+      commissionCents: 372000,
+      netEarnedCents: 322000,
+      totalDueCents: 337000,
+      carryForwardCents: 37000,
+    })
+  })
+
+  it('still owes rent with zero services', () => {
+    const result = calculateMonthlyPay({ ...base, servicesTotalCents: 0 })
+    expect(result.commissionCents).toBe(0)
+    expect(result.netEarnedCents).toBe(-50000)
+  })
+
+  it('uses the given commission rate', () => {
+    const result = calculateMonthlyPay({ ...base, servicesTotalCents: 100000, commissionRate: 70 })
+    expect(result.commissionCents).toBe(70000)
+  })
+
+  it('rounds commission to the nearest cent', () => {
+    const result = calculateMonthlyPay({ ...base, servicesTotalCents: 4501 })
+    expect(result.commissionCents).toBe(2701)
+  })
+
+  it('carries a negative balance forward when overpaid', () => {
+    const result = calculateMonthlyPay({ ...base, paymentsCents: 350000 })
+    expect(result.totalDueCents).toBe(337000)
+    expect(result.carryForwardCents).toBe(-13000)
   })
 })
