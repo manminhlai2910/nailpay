@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { formatMonth } from '../lib/dates'
 import { DEFAULT_SETTINGS, parsePrices, parseSignedAmount, type Settings, type StartingBalance } from '../lib/pay'
+import type { Profile } from '../lib/storage'
 
 interface Props {
   month: string // YYYY-MM; rate and rent changes apply from this month onward
@@ -8,6 +9,8 @@ interface Props {
   onChange: (settings: Settings) => void
   startingBalance: StartingBalance
   onStartingBalanceChange: (balance: StartingBalance) => void
+  profile: Profile
+  onProfileChange: (profile: Profile) => void
 }
 
 function centsToInput(cents: number): string {
@@ -17,7 +20,15 @@ function centsToInput(cents: number): string {
 }
 
 /** Each field saves as soon as it holds a valid value; invalid text shows an error and isn't saved. */
-export default function SettingsTab({ month, settings, onChange, startingBalance, onStartingBalanceChange }: Props) {
+export default function SettingsTab({
+  month,
+  settings,
+  onChange,
+  startingBalance,
+  onStartingBalanceChange,
+  profile,
+  onProfileChange,
+}: Props) {
   const [rate, setRate] = useState(String(settings.commissionRate))
   const [rent, setRent] = useState(centsToInput(settings.rentCents))
   const [rateError, setRateError] = useState('')
@@ -98,6 +109,7 @@ export default function SettingsTab({ month, settings, onChange, startingBalance
       </section>
 
       <StartingBalanceSettings balance={startingBalance} onChange={onStartingBalanceChange} />
+      <ProfileSettings profile={profile} onChange={onProfileChange} />
     </>
   )
 }
@@ -159,6 +171,39 @@ function StartingBalanceSettings({
         <span className="mt-1 block text-xs font-normal text-gray-400">
           Leave blank to start from your first month with services or payments.
         </span>
+      </label>
+    </section>
+  )
+}
+
+function ProfileSettings({ profile, onChange }: { profile: Profile; onChange: (profile: Profile) => void }) {
+  const field = 'mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-base outline-none focus:border-pink-600'
+
+  return (
+    <section className="mt-4 space-y-4 rounded-2xl bg-white p-4 shadow-sm">
+      <div>
+        <h2 className="font-semibold">Your details</h2>
+        <p className="mt-1 text-sm text-gray-500">Shown on the printed pay statement.</p>
+      </div>
+
+      <label className="block text-sm font-medium text-gray-600">
+        Your name
+        <input
+          autoComplete="name"
+          value={profile.name}
+          onChange={(e) => onChange({ ...profile, name: e.target.value })}
+          className={field}
+        />
+      </label>
+
+      <label className="block text-sm font-medium text-gray-600">
+        Salon name
+        <input
+          autoComplete="organization"
+          value={profile.salonName}
+          onChange={(e) => onChange({ ...profile, salonName: e.target.value })}
+          className={field}
+        />
       </label>
     </section>
   )

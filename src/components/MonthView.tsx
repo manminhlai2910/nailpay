@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { formatDay, formatMonth } from '../lib/dates'
+import { downloadFile } from '../lib/download'
+import { servicesToCsv } from '../lib/exportCsv'
 import { formatMoney, groupByDay, monthTotal, tipTotal, type Service } from '../lib/pay'
 import ServiceChips from './ServiceChips'
 
@@ -26,7 +28,17 @@ export default function MonthView({ month, services, onUpdate, onRemove }: Props
 
   return (
     <section className="mt-6">
-      <h2 className="text-lg font-semibold">{formatMonth(month)}</h2>
+      <div className="flex items-baseline justify-between">
+        <h2 className="text-lg font-semibold">{formatMonth(month)}</h2>
+        <button
+          type="button"
+          onClick={() => downloadFile(`nailpay-services-${month}.csv`, servicesToCsv(services, month), 'text/csv')}
+          disabled={inMonth.length === 0}
+          className="text-sm font-medium text-pink-600 disabled:text-gray-300"
+        >
+          Export CSV
+        </button>
+      </div>
 
       <dl className="mt-2 grid grid-cols-3 gap-2 text-center">
         <Stat label="Services" value={String(inMonth.length)} />

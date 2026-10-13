@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react'
+import BackupSection from './components/BackupSection'
 import DashboardTab from './components/DashboardTab'
 import ImportCsv from './components/ImportCsv'
 import MonthlyPayTab from './components/MonthlyPayTab'
 import ServicesTab from './components/ServicesTab'
 import SettingsTab from './components/SettingsTab'
+import type { BackupData } from './lib/backup'
 import { currentMonth } from './lib/dates'
 import { changeSettingsFrom, settingsForMonth, type Payment, type Service, type SettingsChange } from './lib/pay'
 import {
   loadPayments,
+  loadProfile,
   loadServices,
   loadSettingsHistory,
   loadStartingBalance,
   savePayments,
+  saveProfile,
   saveServices,
   saveSettingsHistory,
   saveStartingBalance,
@@ -28,15 +32,27 @@ export default function App() {
 
   const [settingsHistory, setSettingsHistory] = useState<SettingsChange[]>(() => loadSettingsHistory())
   const [startingBalance, setStartingBalance] = useState(loadStartingBalance)
+  const [profile, setProfile] = useState(loadProfile)
+  const [restores, setRestores] = useState(0) // bumped on restore so the settings fields reload
 
   useEffect(() => saveServices(services), [services])
   useEffect(() => saveSettingsHistory(settingsHistory), [settingsHistory])
   useEffect(() => saveStartingBalance(startingBalance), [startingBalance])
   useEffect(() => savePayments(payments), [payments])
+  useEffect(() => saveProfile(profile), [profile])
+
+  function restore(data: BackupData) {
+    setServices(data.services)
+    setPayments(data.payments)
+    setSettingsHistory(data.settingsHistory)
+    setStartingBalance(data.startingBalance)
+    setProfile(data.profile)
+    setRestores((n) => n + 1)
+  }
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-gray-50 text-gray-900">
-      <div className="sticky top-0 z-10 shadow">
+    <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-gray-50 text-gray-900 print:min-h-0 print:max-w-none print:bg-white">
+      <div className="sticky top-0 z-10 shadow print:hidden">
         <header className="bg-pink-600 px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-3 text-white">
           <h1 className="text-2xl font-bold tracking-tight">NailPay</h1>
           <label className="mt-3 flex items-center gap-2 text-sm">
@@ -65,7 +81,7 @@ export default function App() {
         </nav>
       </div>
 
-      <main className="flex-1 p-4">
+      <main className="flex-1 p-4 print:p-0">
         {tab === 'Dashboard' && (
           <DashboardTab month={month} data={{ services, payments, settingsHistory, startingBalance }} />
         )}
@@ -77,19 +93,30 @@ export default function App() {
             month={month}
             data={{ services, payments, settingsHistory, startingBalance }}
             setPayments={setPayments}
+            profile={profile}
           />
         )}
         {tab === 'Settings' && (
           <SettingsTab
-            key={month} // reload the fields with the settings in effect for the newly picked month
+            key={`${month}-${restores}`} // reload the fields for the newly picked month, or after a restore
             month={month}
             settings={settingsForMonth(settingsHistory, month)}
             onChange={(settings) => setSettingsHistory((prev) => changeSettingsFrom(prev, month, settings))}
             startingBalance={startingBalance}
             onStartingBalanceChange={setStartingBalance}
+            profile={profile}
+            onProfileChange={setProfile}
           />
         )}
-        {tab === 'Settings' && <ImportCsv services={services} setServices={setServices} />}
+        {tab === 'Settings' && (
+          <>
+            <ImportCsv services={services} setServices={setServices} />
+            <BackupSection
+              data={{ services, payments, settingsHistory, startingBalance, profile }}
+              onRestore={restore}
+            />
+          </>
+        )}
       </main>
     </div>
   )

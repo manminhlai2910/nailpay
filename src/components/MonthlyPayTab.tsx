@@ -1,48 +1,70 @@
 import { formatMonth } from '../lib/dates'
 import { formatMoney, statementForMonth, tipTotal, type Payment, type PayData } from '../lib/pay'
+import type { Profile } from '../lib/storage'
 import PaymentsSection from './PaymentsSection'
+import PrintStatement from './PrintStatement'
 
 interface Props {
   month: string // YYYY-MM
   data: PayData // everything; the statement carries balances forward from the start month
   setPayments: (update: (prev: Payment[]) => Payment[]) => void
+  profile: Profile // name and salon for the printed statement
 }
 
-export default function MonthlyPayTab({ month, data, setPayments }: Props) {
+export default function MonthlyPayTab({ month, data, setPayments, profile }: Props) {
   const inMonth = data.services.filter((s) => s.date.startsWith(`${month}-`))
   const statement = statementForMonth(data, month)
   const { settings } = statement
 
   return (
-    <section>
-      <h2 className="text-lg font-semibold">{formatMonth(month)}</h2>
+    <>
+      <section className="print:hidden">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-lg font-semibold">{formatMonth(month)}</h2>
+          <button type="button" onClick={() => window.print()} className="text-sm font-medium text-pink-600">
+            Print statement
+          </button>
+        </div>
+        {!profile.name.trim() && !profile.salonName.trim() && (
+          <p className="text-xs text-gray-400">Add your name and salon in Settings to show them on the statement.</p>
+        )}
 
-      <BalanceBanner cents={statement.carryForwardCents} />
+        <BalanceBanner cents={statement.carryForwardCents} />
 
-      <dl className="mt-4 rounded-2xl bg-white px-4 py-2 shadow-sm">
-        <Row
-          label={`Total services (${inMonth.length} service${inMonth.length === 1 ? '' : 's'})`}
-          cents={statement.servicesTotalCents}
-        />
-        <Row label={`Commission (${settings.commissionRate}%)`} cents={statement.commissionCents} />
-        <Row label="Rent" cents={-settings.rentCents} />
-        <Row label="Net earned" cents={statement.netEarnedCents} strong divider />
-        <Row
-          label={statement.isFirstMonth ? 'Starting balance' : 'Owed from last month'}
-          cents={statement.owedFromLastMonthCents}
-        />
-        <Row label="Total due from owner" cents={statement.totalDueCents} strong divider large />
-        <Row label="Paid by owner" cents={-statement.paymentsCents} />
-        <Row label="Balance carried to next month" cents={statement.carryForwardCents} strong divider large />
-      </dl>
+        <dl className="mt-4 rounded-2xl bg-white px-4 py-2 shadow-sm">
+          <Row
+            label={`Total services (${inMonth.length} service${inMonth.length === 1 ? '' : 's'})`}
+            cents={statement.servicesTotalCents}
+          />
+          <Row label={`Commission (${settings.commissionRate}%)`} cents={statement.commissionCents} />
+          <Row label="Rent" cents={-settings.rentCents} />
+          <Row label="Net earned" cents={statement.netEarnedCents} strong divider />
+          <Row
+            label={statement.isFirstMonth ? 'Starting balance' : 'Owed from last month'}
+            cents={statement.owedFromLastMonthCents}
+          />
+          <Row label="Total due from owner" cents={statement.totalDueCents} strong divider large />
+          <Row label="Paid by owner" cents={-statement.paymentsCents} />
+          <Row label="Balance carried to next month" cents={statement.carryForwardCents} strong divider large />
+        </dl>
 
-      <p className="mt-4 text-sm text-gray-600">
-        Tips this month: <span className="font-semibold text-green-700">{formatMoney(tipTotal(inMonth))}</span>{' '}
-        <span className="text-gray-400">(not part of commission)</span>
-      </p>
+        <p className="mt-4 text-sm text-gray-600">
+          Tips this month: <span className="font-semibold text-green-700">{formatMoney(tipTotal(inMonth))}</span>{' '}
+          <span className="text-gray-400">(not part of commission)</span>
+        </p>
 
-      <PaymentsSection month={month} payments={data.payments} setPayments={setPayments} />
-    </section>
+        <PaymentsSection month={month} payments={data.payments} setPayments={setPayments} />
+      </section>
+
+      <PrintStatement
+        className="hidden print:block"
+        month={month}
+        statement={statement}
+        services={inMonth}
+        payments={data.payments.filter((p) => p.date.startsWith(`${month}-`))}
+        profile={profile}
+      />
+    </>
   )
 }
 

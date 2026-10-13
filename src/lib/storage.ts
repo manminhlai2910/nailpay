@@ -10,7 +10,7 @@ import {
 
 const SERVICES_KEY = 'nailpay.services'
 
-function isService(value: unknown): value is Service {
+export function isService(value: unknown): value is Service {
   if (typeof value !== 'object' || value === null) return false
   const s = value as Record<string, unknown>
   return (
@@ -59,6 +59,14 @@ function toSettings(value: unknown): Settings {
   }
 }
 
+/** Validate a parsed settings history, dropping invalid changes. Returns [] if it isn't a list. */
+export function toSettingsHistory(parsed: unknown): SettingsChange[] {
+  if (!Array.isArray(parsed)) return []
+  return parsed
+    .filter((c) => typeof c?.from === 'string' && /^(\d{4}-\d{2})?$/.test(c.from))
+    .map((c) => ({ ...toSettings(c), from: c.from as string }))
+}
+
 /**
  * Load the settings history. Older saves held one settings object; it becomes a change that
  * applies from the beginning. Returns [] (meaning defaults) if nothing is saved or readable.
@@ -66,13 +74,7 @@ function toSettings(value: unknown): Settings {
 export function loadSettingsHistory(storage: Storage = localStorage): SettingsChange[] {
   try {
     const raw = storage.getItem(SETTINGS_HISTORY_KEY)
-    if (raw) {
-      const parsed: unknown = JSON.parse(raw)
-      if (!Array.isArray(parsed)) return []
-      return parsed
-        .filter((c) => typeof c?.from === 'string' && /^(\d{4}-\d{2})?$/.test(c.from))
-        .map((c) => ({ ...toSettings(c), from: c.from as string }))
-    }
+    if (raw) return toSettingsHistory(JSON.parse(raw))
     const legacy = storage.getItem(SETTINGS_KEY)
     return legacy ? [{ ...toSettings(JSON.parse(legacy)), from: '' }] : []
   } catch {
@@ -86,16 +88,20 @@ export function saveSettingsHistory(history: SettingsChange[], storage: Storage 
 
 const STARTING_BALANCE_KEY = 'nailpay.startingBalance'
 
+/** Validate a parsed starting balance, falling back to $0 for an invalid amount. */
+export function toStartingBalance(value: unknown): StartingBalance {
+  const b = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>
+  return {
+    amountCents: Number.isInteger(b.amountCents) ? (b.amountCents as number) : 0,
+    month: typeof b.month === 'string' && /^\d{4}-\d{2}$/.test(b.month) ? b.month : undefined,
+  }
+}
+
 /** Load the starting balance. Defaults to $0 from the first month with data. */
 export function loadStartingBalance(storage: Storage = localStorage): StartingBalance {
   try {
     const raw = storage.getItem(STARTING_BALANCE_KEY)
-    if (!raw) return { amountCents: 0 }
-    const b = JSON.parse(raw) as Record<string, unknown>
-    return {
-      amountCents: Number.isInteger(b.amountCents) ? (b.amountCents as number) : 0,
-      month: typeof b.month === 'string' && /^\d{4}-\d{2}$/.test(b.month) ? b.month : undefined,
-    }
+    return raw ? toStartingBalance(JSON.parse(raw)) : { amountCents: 0 }
   } catch {
     return { amountCents: 0 }
   }
@@ -107,7 +113,7 @@ export function saveStartingBalance(balance: StartingBalance, storage: Storage =
 
 const PAYMENTS_KEY = 'nailpay.payments'
 
-function isPayment(value: unknown): value is Payment {
+export function isPayment(value: unknown): value is Payment {
   if (typeof value !== 'object' || value === null) return false
   const p = value as Record<string, unknown>
   return (
@@ -134,4 +140,34 @@ export function loadPayments(storage: Storage = localStorage): Payment[] {
 
 export function savePayments(payments: Payment[], storage: Storage = localStorage): void {
   storage.setItem(PAYMENTS_KEY, JSON.stringify(payments))
+}
+
+/** Who the statement is for; shown on the printed pay statement. */
+export interface Profile {
+  name: string
+  salonName: string
+}
+
+const PROFILE_KEY = 'nailpay.profile'
+
+/** Validate a parsed profile, using blanks for anything missing. */
+export function toProfile(value: unknown): Profile {
+  const p = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>
+  return {
+    name: typeof p.name === 'string' ? p.name : '',
+    salonName: typeof p.salonName === 'string' ? p.salonName : '',
+  }
+}
+
+export function loadProfile(storage: Storage = localStorage): Profile {
+  try {
+    const raw = storage.getItem(PROFILE_KEY)
+    return toProfile(raw ? JSON.parse(raw) : {})
+  } catch {
+    return toProfile({})
+  }
+}
+
+export function saveProfile(profile: Profile, storage: Storage = localStorage): void {
+  storage.setItem(PROFILE_KEY, JSON.stringify(profile))
 }
