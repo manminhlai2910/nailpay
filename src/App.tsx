@@ -3,15 +3,16 @@ import MonthlyPayTab from './components/MonthlyPayTab'
 import ServicesTab from './components/ServicesTab'
 import SettingsTab from './components/SettingsTab'
 import { currentMonth } from './lib/dates'
-import type { Payment, Service } from './lib/pay'
+import { changeSettingsFrom, settingsForMonth, type Payment, type Service, type SettingsChange } from './lib/pay'
 import {
   loadPayments,
   loadServices,
-  loadSettings,
+  loadSettingsHistory,
+  loadStartingBalance,
   savePayments,
   saveServices,
-  saveSettings,
-  type Settings,
+  saveSettingsHistory,
+  saveStartingBalance,
 } from './lib/storage'
 
 const TABS = ['Services', 'Monthly Pay', 'Settings'] as const
@@ -23,12 +24,12 @@ export default function App() {
   const [services, setServices] = useState<Service[]>(() => loadServices())
   const [payments, setPayments] = useState<Payment[]>(() => loadPayments())
 
-  const [settings, setSettings] = useState<Settings>(() => loadSettings())
-  // Not saved yet: kept here so it survives switching tabs. Will carry over automatically later.
-  const [owedText, setOwedText] = useState('')
+  const [settingsHistory, setSettingsHistory] = useState<SettingsChange[]>(() => loadSettingsHistory())
+  const [startingBalance, setStartingBalance] = useState(loadStartingBalance)
 
   useEffect(() => saveServices(services), [services])
-  useEffect(() => saveSettings(settings), [settings])
+  useEffect(() => saveSettingsHistory(settingsHistory), [settingsHistory])
+  useEffect(() => saveStartingBalance(startingBalance), [startingBalance])
   useEffect(() => savePayments(payments), [payments])
 
   return (
@@ -69,15 +70,20 @@ export default function App() {
         {tab === 'Monthly Pay' && (
           <MonthlyPayTab
             month={month}
-            services={services}
-            payments={payments}
+            data={{ services, payments, settingsHistory, startingBalance }}
             setPayments={setPayments}
-            settings={settings}
-            owedText={owedText}
-            onOwedTextChange={setOwedText}
           />
         )}
-        {tab === 'Settings' && <SettingsTab settings={settings} onChange={setSettings} />}
+        {tab === 'Settings' && (
+          <SettingsTab
+            key={month} // reload the fields with the settings in effect for the newly picked month
+            month={month}
+            settings={settingsForMonth(settingsHistory, month)}
+            onChange={(settings) => setSettingsHistory((prev) => changeSettingsFrom(prev, month, settings))}
+            startingBalance={startingBalance}
+            onStartingBalanceChange={setStartingBalance}
+          />
+        )}
       </main>
     </div>
   )

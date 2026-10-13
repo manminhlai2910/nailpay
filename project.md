@@ -11,6 +11,8 @@ A personal pay tracker for a nail technician paid on commission.
 - Monthly rent: $500 subtracted after commission (setting, default 500)
 - Tips are NOT part of commission; shown separately
 - Owed from last month = last month's unpaid balance (carries automatically)
+- Starting balance (setting, default $0) with a start month (default: first month with data) seeds the carryover
+- Commission and rent changes apply from the selected month onward; earlier months keep their own settings
 - Amount due = services × rate − rent + owed from last month
 - Balance carried forward = amount due − payments received this month
 - Store all money as integer cents to avoid rounding errors

@@ -1,15 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import {
   calculateMonthlyPay,
+  changeSettingsFrom,
   dayTotal,
   formatMoney,
   groupByDay,
   monthTotal,
   parsePrices,
+  parseSignedAmount,
   paymentTotal,
+  settingsForMonth,
+  statementForMonth,
   tipTotal,
+  type PayData,
   type Payment,
   type Service,
+  type SettingsChange,
 } from './pay'
 
 function servicesOn(date: string, prices: number[]): Service[] {
@@ -176,5 +182,110 @@ describe('paymentTotal', () => {
     })
     expect(formatMoney(-paymentTotal(payments, '2026-10'))).toBe('-$3,000.00')
     expect(formatMoney(result.carryForwardCents)).toBe('$370.00')
+  })
+})
+
+describe('parseSignedAmount', () => {
+  it('parses positive, negative and blank amounts', () => {
+    expect(parseSignedAmount('150')).toBe(15000)
+    expect(parseSignedAmount(' -130.50 ')).toBe(-13050)
+    expect(parseSignedAmount('')).toBe(0)
+  })
+
+  it('rejects more than one amount', () => {
+    expect(() => parseSignedAmount('1, 2')).toThrow(/one amount/)
+  })
+})
+
+describe('settingsForMonth', () => {
+  const history: SettingsChange[] = [
+    { from: '', commissionRate: 60, rentCents: 50000 },
+    { from: '2026-10', commissionRate: 65, rentCents: 60000 },
+  ]
+
+  it('uses defaults when nothing is saved', () => {
+    expect(settingsForMonth([], '2026-10')).toEqual({ commissionRate: 60, rentCents: 50000 })
+  })
+
+  it('uses the latest change at or before the month', () => {
+    expect(settingsForMonth(history, '2026-09').rentCents).toBe(50000)
+    expect(settingsForMonth(history, '2026-10').rentCents).toBe(60000)
+    expect(settingsForMonth(history, '2027-03').rentCents).toBe(60000)
+  })
+})
+
+describe('changeSettingsFrom', () => {
+  it('keeps earlier months on their old settings', () => {
+    const history = changeSettingsFrom([], '2026-10', { commissionRate: 65, rentCents: 50000 })
+    expect(settingsForMonth(history, '2026-09').commissionRate).toBe(60)
+    expect(settingsForMonth(history, '2026-10').commissionRate).toBe(65)
+  })
+
+  it('replaces later changes', () => {
+    const history: SettingsChange[] = [
+      { from: '', commissionRate: 60, rentCents: 50000 },
+      { from: '2026-12', commissionRate: 70, rentCents: 50000 },
+    ]
+    const next = changeSettingsFrom(history, '2026-10', { commissionRate: 65, rentCents: 50000 })
+    expect(next.map((c) => c.from)).toEqual(['', '2026-10'])
+    expect(settingsForMonth(next, '2027-01').commissionRate).toBe(65)
+  })
+
+  it('adds no change when the settings are unchanged', () => {
+    expect(changeSettingsFrom([], '2026-10', { commissionRate: 60, rentCents: 50000 })).toEqual([])
+  })
+})
+
+describe('statementForMonth', () => {
+  const data: PayData = {
+    services: [...servicesOn('2026-09-10', [100000]), ...servicesOn('2026-10-01', [620000])],
+    payments: [{ id: 'p', date: '2026-10-20', amountCents: 300000, method: 'Zelle' }],
+    settingsHistory: [],
+    startingBalance: { amountCents: 5000 },
+  }
+
+  it('carries each month into the next (spec test case)', () => {
+    // Sept: commission $600 - rent $500 + starting $50 = $150 carried into October
+    const sept = statementForMonth(data, '2026-09')
+    expect(sept.isFirstMonth).toBe(true)
+    expect(sept.owedFromLastMonthCents).toBe(5000)
+    expect(sept.carryForwardCents).toBe(15000)
+
+    const oct = statementForMonth(data, '2026-10')
+    expect(oct.isFirstMonth).toBe(false)
+    expect(oct.owedFromLastMonthCents).toBe(15000)
+    expect(oct.totalDueCents).toBe(337000)
+    expect(oct.carryForwardCents).toBe(37000)
+  })
+
+  it('charges rent for empty months in between', () => {
+    expect(statementForMonth(data, '2026-11').owedFromLastMonthCents).toBe(37000)
+    expect(statementForMonth(data, '2026-12').owedFromLastMonthCents).toBe(37000 - 50000)
+  })
+
+  it('applies each month its own settings', () => {
+    const settingsHistory = changeSettingsFrom([], '2026-10', { commissionRate: 60, rentCents: 0 })
+    const oct = statementForMonth({ ...data, settingsHistory }, '2026-10')
+    expect(oct.owedFromLastMonthCents).toBe(15000) // September still paid $500 rent
+    expect(oct.carryForwardCents).toBe(87000)
+  })
+
+  it('starts from the starting balance month when set', () => {
+    const withStart = { ...data, startingBalance: { amountCents: 15000, month: '2026-10' } }
+    expect(statementForMonth(withStart, '2026-10').carryForwardCents).toBe(37000)
+    // months before the start stand alone
+    const sept = statementForMonth(withStart, '2026-09')
+    expect(sept.owedFromLastMonthCents).toBe(0)
+    expect(sept.isFirstMonth).toBe(false)
+  })
+
+  it('crosses year boundaries', () => {
+    const yearEnd = { ...data, services: servicesOn('2026-12-05', [100000]), payments: [] }
+    expect(statementForMonth(yearEnd, '2027-01').owedFromLastMonthCents).toBe(15000)
+  })
+
+  it('uses the starting balance when there is no data', () => {
+    const empty = { ...data, services: [], payments: [] }
+    expect(statementForMonth(empty, '2026-10').owedFromLastMonthCents).toBe(5000)
   })
 })

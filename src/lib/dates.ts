@@ -28,3 +28,10 @@ export function formatDay(date: string): string {
     day: 'numeric',
   })
 }
+
+/** "2026-12" + 1 -> "2027-01" */
+export function addMonths(month: string, n: number): string {
+  const [y, m] = month.split('-').map(Number)
+  const total = y * 12 + (m - 1) + n
+  return `${Math.floor(total / 12)}-${pad((total % 12) + 1)}`
+}

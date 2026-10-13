@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Payment } from './pay'
-import { loadPayments, savePayments } from './storage'
+import { loadPayments, loadSettingsHistory, loadStartingBalance, savePayments, saveSettingsHistory } from './storage'
 
 function memoryStorage(): Storage {
   const data = new Map<string, string>()
@@ -46,5 +46,32 @@ describe('payments storage', () => {
       ]),
     )
     expect(loadPayments(storage).map((p) => p.id)).toEqual(['ok'])
+  })
+})
+
+describe('settings history storage', () => {
+  it('turns old single settings into a change from the beginning', () => {
+    const storage = memoryStorage()
+    storage.setItem('nailpay.settings', JSON.stringify({ commissionRate: 65, rentCents: 40000 }))
+    expect(loadSettingsHistory(storage)).toEqual([{ from: '', commissionRate: 65, rentCents: 40000 }])
+  })
+
+  it('prefers the saved history and drops bad months', () => {
+    const storage = memoryStorage()
+    storage.setItem('nailpay.settings', JSON.stringify({ commissionRate: 65, rentCents: 40000 }))
+    saveSettingsHistory(
+      [
+        { from: '', commissionRate: 60, rentCents: 50000 },
+        { from: 'Oct', commissionRate: 70, rentCents: 50000 },
+      ],
+      storage,
+    )
+    expect(loadSettingsHistory(storage)).toEqual([{ from: '', commissionRate: 60, rentCents: 50000 }])
+  })
+})
+
+describe('starting balance storage', () => {
+  it('defaults to $0 with no start month', () => {
+    expect(loadStartingBalance(memoryStorage())).toEqual({ amountCents: 0 })
   })
 })
