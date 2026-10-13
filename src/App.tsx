@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
+import MonthlyPayTab from './components/MonthlyPayTab'
 import ServicesTab from './components/ServicesTab'
-import { currentMonth, formatMonth } from './lib/dates'
+import SettingsTab from './components/SettingsTab'
+import { currentMonth } from './lib/dates'
 import type { Service } from './lib/pay'
-import { loadServices, saveServices } from './lib/storage'
+import { loadServices, loadSettings, saveServices, saveSettings, type Settings } from './lib/storage'
 
 const TABS = ['Services', 'Monthly Pay', 'Settings'] as const
 type Tab = (typeof TABS)[number]
@@ -12,7 +14,12 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('Services')
   const [services, setServices] = useState<Service[]>(() => loadServices())
 
+  const [settings, setSettings] = useState<Settings>(() => loadSettings())
+  // Not saved yet: kept here so it survives switching tabs. Will carry over automatically later.
+  const [owedText, setOwedText] = useState('')
+
   useEffect(() => saveServices(services), [services])
+  useEffect(() => saveSettings(settings), [settings])
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-gray-50 text-gray-900">
@@ -46,13 +53,19 @@ export default function App() {
       </div>
 
       <main className="flex-1 p-4">
-        {tab === 'Services' ? (
+        {tab === 'Services' && (
           <ServicesTab services={services} setServices={setServices} month={month} setMonth={setMonth} />
-        ) : (
-          <p className="text-gray-500">
-            {tab} for {formatMonth(month)} — coming soon.
-          </p>
         )}
+        {tab === 'Monthly Pay' && (
+          <MonthlyPayTab
+            month={month}
+            services={services}
+            settings={settings}
+            owedText={owedText}
+            onOwedTextChange={setOwedText}
+          />
+        )}
+        {tab === 'Settings' && <SettingsTab settings={settings} onChange={setSettings} />}
       </main>
     </div>
   )

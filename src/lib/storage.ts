@@ -31,3 +31,36 @@ export function loadServices(storage: Storage = localStorage): Service[] {
 export function saveServices(services: Service[], storage: Storage = localStorage): void {
   storage.setItem(SERVICES_KEY, JSON.stringify(services))
 }
+
+const SETTINGS_KEY = 'nailpay.settings'
+
+export interface Settings {
+  commissionRate: number // whole percent, e.g. 60
+  rentCents: number
+}
+
+export const DEFAULT_SETTINGS: Settings = { commissionRate: 60, rentCents: 50000 }
+
+/** Load saved settings, falling back to defaults for anything missing or invalid. */
+export function loadSettings(storage: Storage = localStorage): Settings {
+  try {
+    const raw = storage.getItem(SETTINGS_KEY)
+    if (!raw) return DEFAULT_SETTINGS
+    const s = JSON.parse(raw) as Record<string, unknown>
+    const rate = s.commissionRate
+    const rent = s.rentCents
+    return {
+      commissionRate:
+        Number.isInteger(rate) && (rate as number) >= 0 && (rate as number) <= 100
+          ? (rate as number)
+          : DEFAULT_SETTINGS.commissionRate,
+      rentCents: Number.isInteger(rent) && (rent as number) >= 0 ? (rent as number) : DEFAULT_SETTINGS.rentCents,
+    }
+  } catch {
+    return DEFAULT_SETTINGS
+  }
+}
+
+export function saveSettings(settings: Settings, storage: Storage = localStorage): void {
+  storage.setItem(SETTINGS_KEY, JSON.stringify(settings))
+}
