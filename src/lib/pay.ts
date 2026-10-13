@@ -50,3 +50,28 @@ export function formatMoney(cents: number): string {
   const rest = String(abs % 100).padStart(2, '0')
   return `${sign}$${dollars}.${rest}`
 }
+
+/** Total tips (not part of commission). */
+export function tipTotal(services: Service[]): number {
+  return services.reduce((total, s) => total + (s.tipCents ?? 0), 0)
+}
+
+export interface DayGroup {
+  date: string // YYYY-MM-DD
+  services: Service[]
+  totalCents: number
+}
+
+/** Group services by day, newest first. If `month` (YYYY-MM) is given, only that month is included. */
+export function groupByDay(services: Service[], month?: string): DayGroup[] {
+  const byDate = new Map<string, Service[]>()
+  for (const s of services) {
+    if (month && !s.date.startsWith(`${month}-`)) continue
+    const day = byDate.get(s.date)
+    if (day) day.push(s)
+    else byDate.set(s.date, [s])
+  }
+  return [...byDate.entries()]
+    .sort(([a], [b]) => (a < b ? 1 : a > b ? -1 : 0))
+    .map(([date, list]) => ({ date, services: list, totalCents: sumPrices(list) }))
+}

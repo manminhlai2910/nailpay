@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { dayTotal, formatMoney, monthTotal, parsePrices, type Service } from './pay'
+import {
+  dayTotal,
+  formatMoney,
+  groupByDay,
+  monthTotal,
+  parsePrices,
+  tipTotal,
+  type Service,
+} from './pay'
 
 function servicesOn(date: string, prices: number[]): Service[] {
   return prices.map((priceCents, i) => ({ id: `${date}-${i}`, date, priceCents }))
@@ -72,5 +80,31 @@ describe('formatMoney', () => {
     expect(formatMoney(5)).toBe('$0.05')
     expect(formatMoney(620000)).toBe('$6,200.00')
     expect(formatMoney(-15000)).toBe('-$150.00')
+  })
+})
+
+describe('tipTotal', () => {
+  it('sums tips, treating missing tips as 0', () => {
+    const services: Service[] = [
+      { id: 'a', date: '2026-10-01', priceCents: 3500, tipCents: 500 },
+      { id: 'b', date: '2026-10-01', priceCents: 5500 },
+      { id: 'c', date: '2026-10-02', priceCents: 7000, tipCents: 1250 },
+    ]
+    expect(tipTotal(services)).toBe(1750)
+  })
+})
+
+describe('groupByDay', () => {
+  it('groups by date, newest first, filtered to the month', () => {
+    const services = [
+      ...servicesOn('2026-10-01', [3500, 5500]),
+      ...servicesOn('2026-09-30', [10000]),
+      ...servicesOn('2026-10-15', [6000]),
+      ...servicesOn('2026-10-01', [7000]),
+    ]
+    const groups = groupByDay(services, '2026-10')
+    expect(groups.map((g) => g.date)).toEqual(['2026-10-15', '2026-10-01'])
+    expect(groups[1].services).toHaveLength(3)
+    expect(groups[1].totalCents).toBe(16000)
   })
 })

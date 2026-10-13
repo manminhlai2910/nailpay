@@ -1,22 +1,18 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import ServicesTab from './components/ServicesTab'
+import { currentMonth, formatMonth } from './lib/dates'
+import type { Service } from './lib/pay'
+import { loadServices, saveServices } from './lib/storage'
 
 const TABS = ['Services', 'Monthly Pay', 'Settings'] as const
 type Tab = (typeof TABS)[number]
 
-/** Current month as "YYYY-MM" in local time. */
-function currentMonth(): string {
-  const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-}
-
-function formatMonth(month: string): string {
-  const [y, m] = month.split('-').map(Number)
-  return new Date(y, m - 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
-}
-
 export default function App() {
   const [month, setMonth] = useState(currentMonth)
   const [tab, setTab] = useState<Tab>('Services')
+  const [services, setServices] = useState<Service[]>(() => loadServices())
+
+  useEffect(() => saveServices(services), [services])
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-gray-50 text-gray-900">
@@ -50,9 +46,13 @@ export default function App() {
       </div>
 
       <main className="flex-1 p-4">
-        <p className="text-gray-500">
-          {tab} for {formatMonth(month)} — coming soon.
-        </p>
+        {tab === 'Services' ? (
+          <ServicesTab services={services} setServices={setServices} month={month} setMonth={setMonth} />
+        ) : (
+          <p className="text-gray-500">
+            {tab} for {formatMonth(month)} — coming soon.
+          </p>
+        )}
       </main>
     </div>
   )
