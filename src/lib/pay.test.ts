@@ -10,8 +10,11 @@ import {
   parseSignedAmount,
   paymentTotal,
   settingsForMonth,
+  startMonth,
   statementForMonth,
+  statementsBetween,
   tipTotal,
+  topServicesByRevenue,
   type PayData,
   type Payment,
   type Service,
@@ -287,5 +290,58 @@ describe('statementForMonth', () => {
   it('uses the starting balance when there is no data', () => {
     const empty = { ...data, services: [], payments: [] }
     expect(statementForMonth(empty, '2026-10').owedFromLastMonthCents).toBe(5000)
+  })
+})
+
+describe('startMonth', () => {
+  const services = servicesOn('2026-09-10', [100000])
+  it('uses the starting balance month when set, else the first month with data', () => {
+    const base: PayData = { services, payments: [], settingsHistory: [], startingBalance: { amountCents: 0 } }
+    expect(startMonth(base)).toBe('2026-09')
+    expect(startMonth({ ...base, startingBalance: { amountCents: 0, month: '2026-07' } })).toBe('2026-07')
+    expect(startMonth({ ...base, services: [] })).toBeUndefined()
+  })
+})
+
+describe('statementsBetween', () => {
+  const data: PayData = {
+    services: [...servicesOn('2026-09-10', [100000]), ...servicesOn('2026-10-01', [620000])],
+    payments: [{ id: 'p', date: '2026-10-20', amountCents: 300000, method: 'Zelle' }],
+    settingsHistory: [],
+    startingBalance: { amountCents: 5000 },
+  }
+
+  it('returns one chained statement per month, oldest first, across years', () => {
+    const list = statementsBetween(data, '2026-09', '2027-01')
+    expect(list.map((s) => s.month)).toEqual(['2026-09', '2026-10', '2026-11', '2026-12', '2027-01'])
+    expect(list[1]).toEqual(statementForMonth(data, '2026-10'))
+    expect(list[1].carryForwardCents).toBe(37000)
+  })
+
+  it('is empty when first is after last', () => {
+    expect(statementsBetween(data, '2026-10', '2026-09')).toEqual([])
+  })
+})
+
+describe('topServicesByRevenue', () => {
+  const services: Service[] = [
+    { id: '1', date: '2026-10-01', priceCents: 5500, name: 'Gel' },
+    { id: '2', date: '2026-10-01', priceCents: 5500, name: ' gel ' },
+    { id: '3', date: '2026-10-02', priceCents: 7000, name: 'Acrylic' },
+    { id: '4', date: '2026-10-02', priceCents: 3500 },
+    { id: '5', date: '2026-10-03', priceCents: 2000, name: 'Polish', tipCents: 9900 },
+  ]
+
+  it('groups by name ignoring case and spaces, sorts by revenue, excludes tips', () => {
+    expect(topServicesByRevenue(services, 5)).toEqual([
+      { name: 'Gel', count: 2, totalCents: 11000 },
+      { name: 'Acrylic', count: 1, totalCents: 7000 },
+      { name: '', count: 1, totalCents: 3500 },
+      { name: 'Polish', count: 1, totalCents: 2000 },
+    ])
+  })
+
+  it('limits the result', () => {
+    expect(topServicesByRevenue(services, 2).map((s) => s.name)).toEqual(['Gel', 'Acrylic'])
   })
 })

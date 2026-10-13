@@ -192,13 +192,18 @@ export function firstDataMonth(services: Service[], payments: Payment[]): string
   return dates.length > 0 ? dates.reduce((min, d) => (d < min ? d : min)).slice(0, 7) : undefined
 }
 
+/** The month the carryover chain starts: the starting balance's month, else the first month with data. */
+export function startMonth(data: PayData): string | undefined {
+  return data.startingBalance.month ?? firstDataMonth(data.services, data.payments)
+}
+
 /**
  * The pay statement for `month`, with "owed from last month" carried forward month by month
  * from the start month (every month in between counts, including rent for months with no services).
  * Months before the start month stand alone with nothing owed from before.
  */
 export function statementForMonth(data: PayData, month: string): MonthStatement {
-  const start = data.startingBalance.month ?? firstDataMonth(data.services, data.payments) ?? month
+  const start = startMonth(data) ?? month
   const chained = start <= month
   let owed = chained ? data.startingBalance.amountCents : 0
   let current = chained ? start : month
@@ -221,4 +226,34 @@ export function statementForMonth(data: PayData, month: string): MonthStatement 
     owed = pay.carryForwardCents
     current = addMonths(current, 1)
   }
+}
+
+/** Statements for every month from `first` to `last` (YYYY-MM), oldest first. */
+export function statementsBetween(data: PayData, first: string, last: string): MonthStatement[] {
+  const statements: MonthStatement[] = []
+  for (let m = first; m <= last; m = addMonths(m, 1)) statements.push(statementForMonth(data, m))
+  return statements
+}
+
+export interface ServiceRevenue {
+  name: string // "" for services without a name
+  count: number
+  totalCents: number
+}
+
+/** Services grouped by name (case-insensitive, trimmed), highest revenue first, at most `limit`. */
+export function topServicesByRevenue(services: Service[], limit: number): ServiceRevenue[] {
+  const byName = new Map<string, ServiceRevenue>()
+  for (const s of services) {
+    const name = s.name?.trim() ?? ''
+    const key = name.toLowerCase()
+    const entry = byName.get(key)
+    if (entry) {
+      entry.count++
+      entry.totalCents += s.priceCents
+    } else byName.set(key, { name, count: 1, totalCents: s.priceCents })
+  }
+  return [...byName.values()]
+    .sort((a, b) => b.totalCents - a.totalCents || a.name.localeCompare(b.name))
+    .slice(0, limit)
 }

@@ -19,6 +19,12 @@ export function formatMonth(month: string): string {
   return new Date(y, m - 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
 }
 
+/** "2026-10" -> "Oct" */
+export function formatMonthShort(month: string): string {
+  const [y, m] = month.split('-').map(Number)
+  return new Date(y, m - 1).toLocaleDateString(undefined, { month: 'short' })
+}
+
 /** "2026-10-01" -> "Thu, Oct 1" */
 export function formatDay(date: string): string {
   const [y, m, d] = date.split('-').map(Number)

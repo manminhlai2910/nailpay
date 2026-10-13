@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import DashboardTab from './components/DashboardTab'
 import MonthlyPayTab from './components/MonthlyPayTab'
 import ServicesTab from './components/ServicesTab'
 import SettingsTab from './components/SettingsTab'
@@ -15,12 +16,12 @@ import {
   saveStartingBalance,
 } from './lib/storage'
 
-const TABS = ['Services', 'Monthly Pay', 'Settings'] as const
+const TABS = ['Dashboard', 'Services', 'Monthly Pay', 'Settings'] as const
 type Tab = (typeof TABS)[number]
 
 export default function App() {
   const [month, setMonth] = useState(currentMonth)
-  const [tab, setTab] = useState<Tab>('Services')
+  const [tab, setTab] = useState<Tab>('Dashboard')
   const [services, setServices] = useState<Service[]>(() => loadServices())
   const [payments, setPayments] = useState<Payment[]>(() => loadPayments())
 
@@ -48,7 +49,7 @@ export default function App() {
           </label>
         </header>
 
-        <nav className="grid grid-cols-3 border-b border-gray-200 bg-white">
+        <nav className="grid grid-cols-4 border-b border-gray-200 bg-white">
           {TABS.map((t) => (
             <button
               key={t}
@@ -64,6 +65,9 @@ export default function App() {
       </div>
 
       <main className="flex-1 p-4">
+        {tab === 'Dashboard' && (
+          <DashboardTab month={month} data={{ services, payments, settingsHistory, startingBalance }} />
+        )}
         {tab === 'Services' && (
           <ServicesTab services={services} setServices={setServices} month={month} setMonth={setMonth} />
         )}
