@@ -105,3 +105,21 @@ export function calculateMonthlyPay({
   const carryForwardCents = totalDueCents - paymentsCents
   return { commissionCents, netEarnedCents, totalDueCents, carryForwardCents }
 }
+
+export const PAYMENT_METHODS = ['Cash', 'Check', 'Zelle'] as const
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number]
+
+export interface Payment {
+  id: string
+  date: string // YYYY-MM-DD
+  amountCents: number
+  method: PaymentMethod
+  note?: string
+}
+
+/** Total paid by the owner. If `month` (YYYY-MM) is given, only payments dated in that month count. */
+export function paymentTotal(payments: Payment[], month?: string): number {
+  return payments
+    .filter((p) => !month || p.date.startsWith(`${month}-`))
+    .reduce((total, p) => total + p.amountCents, 0)
+}

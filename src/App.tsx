@@ -3,8 +3,16 @@ import MonthlyPayTab from './components/MonthlyPayTab'
 import ServicesTab from './components/ServicesTab'
 import SettingsTab from './components/SettingsTab'
 import { currentMonth } from './lib/dates'
-import type { Service } from './lib/pay'
-import { loadServices, loadSettings, saveServices, saveSettings, type Settings } from './lib/storage'
+import type { Payment, Service } from './lib/pay'
+import {
+  loadPayments,
+  loadServices,
+  loadSettings,
+  savePayments,
+  saveServices,
+  saveSettings,
+  type Settings,
+} from './lib/storage'
 
 const TABS = ['Services', 'Monthly Pay', 'Settings'] as const
 type Tab = (typeof TABS)[number]
@@ -13,6 +21,7 @@ export default function App() {
   const [month, setMonth] = useState(currentMonth)
   const [tab, setTab] = useState<Tab>('Services')
   const [services, setServices] = useState<Service[]>(() => loadServices())
+  const [payments, setPayments] = useState<Payment[]>(() => loadPayments())
 
   const [settings, setSettings] = useState<Settings>(() => loadSettings())
   // Not saved yet: kept here so it survives switching tabs. Will carry over automatically later.
@@ -20,6 +29,7 @@ export default function App() {
 
   useEffect(() => saveServices(services), [services])
   useEffect(() => saveSettings(settings), [settings])
+  useEffect(() => savePayments(payments), [payments])
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-gray-50 text-gray-900">
@@ -60,6 +70,8 @@ export default function App() {
           <MonthlyPayTab
             month={month}
             services={services}
+            payments={payments}
+            setPayments={setPayments}
             settings={settings}
             owedText={owedText}
             onOwedTextChange={setOwedText}

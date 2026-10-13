@@ -6,7 +6,9 @@ import {
   groupByDay,
   monthTotal,
   parsePrices,
+  paymentTotal,
   tipTotal,
+  type Payment,
   type Service,
 } from './pay'
 
@@ -148,5 +150,31 @@ describe('calculateMonthlyPay', () => {
     const result = calculateMonthlyPay({ ...base, paymentsCents: 350000 })
     expect(result.totalDueCents).toBe(337000)
     expect(result.carryForwardCents).toBe(-13000)
+  })
+})
+
+describe('paymentTotal', () => {
+  const payments: Payment[] = [
+    { id: 'a', date: '2026-09-30', amountCents: 50000, method: 'Cash' },
+    { id: 'b', date: '2026-10-05', amountCents: 150000, method: 'Zelle' },
+    { id: 'c', date: '2026-10-20', amountCents: 150000, method: 'Check', note: 'check #1042' },
+  ]
+
+  it('sums only payments in the given month', () => {
+    expect(paymentTotal(payments, '2026-10')).toBe(300000)
+    expect(paymentTotal(payments)).toBe(350000)
+    expect(paymentTotal([], '2026-10')).toBe(0)
+  })
+
+  it('feeds calculateMonthlyPay for the spec test case', () => {
+    const result = calculateMonthlyPay({
+      servicesTotalCents: 620000,
+      commissionRate: 60,
+      rentCents: 50000,
+      owedFromLastMonthCents: 15000,
+      paymentsCents: paymentTotal(payments, '2026-10'),
+    })
+    expect(formatMoney(-paymentTotal(payments, '2026-10'))).toBe('-$3,000.00')
+    expect(formatMoney(result.carryForwardCents)).toBe('$370.00')
   })
 })

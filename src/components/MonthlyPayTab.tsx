@@ -1,11 +1,23 @@
 import { useState } from 'react'
 import { formatMonth } from '../lib/dates'
-import { calculateMonthlyPay, formatMoney, monthTotal, parsePrices, tipTotal, type Service } from '../lib/pay'
+import {
+  calculateMonthlyPay,
+  formatMoney,
+  monthTotal,
+  parsePrices,
+  paymentTotal,
+  tipTotal,
+  type Payment,
+  type Service,
+} from '../lib/pay'
 import type { Settings } from '../lib/storage'
+import PaymentsSection from './PaymentsSection'
 
 interface Props {
   month: string // YYYY-MM
   services: Service[] // all services; filtered to `month` here
+  payments: Payment[] // all payments; filtered to `month` here
+  setPayments: (update: (prev: Payment[]) => Payment[]) => void
   settings: Settings
   owedText: string
   onOwedTextChange: (text: string) => void
@@ -26,10 +38,19 @@ function formatSigned(cents: number): string {
   return cents > 0 ? `+${formatMoney(cents)}` : formatMoney(cents)
 }
 
-export default function MonthlyPayTab({ month, services, settings, owedText, onOwedTextChange }: Props) {
+export default function MonthlyPayTab({
+  month,
+  services,
+  payments,
+  setPayments,
+  settings,
+  owedText,
+  onOwedTextChange,
+}: Props) {
   const [owedError, setOwedError] = useState('')
   const inMonth = services.filter((s) => s.date.startsWith(`${month}-`))
   const servicesTotalCents = monthTotal(inMonth)
+  const paymentsCents = paymentTotal(payments, month)
 
   let owedFromLastMonthCents = 0
   try {
@@ -43,7 +64,7 @@ export default function MonthlyPayTab({ month, services, settings, owedText, onO
     commissionRate: settings.commissionRate,
     rentCents: settings.rentCents,
     owedFromLastMonthCents,
-    paymentsCents: 0,
+    paymentsCents,
   })
 
   function changeOwed(text: string) {
@@ -91,12 +112,16 @@ export default function MonthlyPayTab({ month, services, settings, owedText, onO
         </div>
 
         <Row label="Total due from owner" cents={pay.totalDueCents} strong divider large />
+        <Row label="Paid by owner" cents={-paymentsCents} />
+        <Row label="Balance carried to next month" cents={pay.carryForwardCents} strong divider large />
       </dl>
 
       <p className="mt-4 text-sm text-gray-600">
         Tips this month: <span className="font-semibold text-green-700">{formatMoney(tipTotal(inMonth))}</span>{' '}
         <span className="text-gray-400">(not part of commission)</span>
       </p>
+
+      <PaymentsSection month={month} payments={payments} setPayments={setPayments} />
     </section>
   )
 }

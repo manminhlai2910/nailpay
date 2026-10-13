@@ -1,4 +1,4 @@
-import type { Service } from './pay'
+import { PAYMENT_METHODS, type Payment, type Service } from './pay'
 
 const SERVICES_KEY = 'nailpay.services'
 
@@ -63,4 +63,35 @@ export function loadSettings(storage: Storage = localStorage): Settings {
 
 export function saveSettings(settings: Settings, storage: Storage = localStorage): void {
   storage.setItem(SETTINGS_KEY, JSON.stringify(settings))
+}
+
+const PAYMENTS_KEY = 'nailpay.payments'
+
+function isPayment(value: unknown): value is Payment {
+  if (typeof value !== 'object' || value === null) return false
+  const p = value as Record<string, unknown>
+  return (
+    typeof p.id === 'string' &&
+    typeof p.date === 'string' &&
+    /^\d{4}-\d{2}-\d{2}$/.test(p.date) &&
+    Number.isInteger(p.amountCents) &&
+    (PAYMENT_METHODS as readonly unknown[]).includes(p.method) &&
+    (p.note === undefined || typeof p.note === 'string')
+  )
+}
+
+/** Load saved payments. Returns [] if nothing is saved or the data is unreadable. */
+export function loadPayments(storage: Storage = localStorage): Payment[] {
+  try {
+    const raw = storage.getItem(PAYMENTS_KEY)
+    if (!raw) return []
+    const parsed: unknown = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.filter(isPayment) : []
+  } catch {
+    return []
+  }
+}
+
+export function savePayments(payments: Payment[], storage: Storage = localStorage): void {
+  storage.setItem(PAYMENTS_KEY, JSON.stringify(payments))
 }
