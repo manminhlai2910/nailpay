@@ -10,8 +10,10 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "i18next": "^26.4.4",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "react-i18next": "^17.0.16",
     "recharts": "^3.10.1"
   },
   "devDependencies": {
@@ -22,6 +24,7 @@
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
     "vite": "^8.3.4",
+    "vite-plugin-pwa": "^2.0.0",
     "vitest": "^5.0.4"
   }
 }

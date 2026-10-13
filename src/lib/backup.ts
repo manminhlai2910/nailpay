@@ -1,5 +1,6 @@
 // Pure backup/restore of all NailPay data as one JSON file.
 
+import { AppError } from './errors'
 import type { PayData } from './pay'
 import { isPayment, isService, toProfile, toSettingsHistory, toStartingBalance, type Profile } from './storage'
 
@@ -40,7 +41,7 @@ export function createBackup(data: BackupData, exportedAt: Date): string {
 
 /** Read backup-file text. Throws with a readable message if it isn't a valid NailPay backup. */
 export function parseBackup(text: string): Backup {
-  const notBackup = new Error("That file isn't a NailPay backup.")
+  const notBackup = new AppError("That file isn't a NailPay backup.", 'errors.notBackup')
   let parsed: unknown
   try {
     parsed = JSON.parse(text)
@@ -51,7 +52,7 @@ export function parseBackup(text: string): Backup {
   const b = parsed as Record<string, unknown>
   if (b.app !== APP || !Array.isArray(b.services) || !Array.isArray(b.payments)) throw notBackup
   if (typeof b.version !== 'number' || b.version > VERSION) {
-    throw new Error('This backup was made by a newer version of NailPay.')
+    throw new AppError('This backup was made by a newer version of NailPay.', 'errors.newerBackup')
   }
 
   // Refuse a partly damaged backup rather than silently restoring only some of it.
@@ -62,7 +63,11 @@ export function parseBackup(text: string): Backup {
       badServices && `${badServices} service${badServices === 1 ? '' : 's'}`,
       badPayments && `${badPayments} payment${badPayments === 1 ? '' : 's'}`,
     ].filter(Boolean)
-    throw new Error(`This backup is damaged: ${parts.join(' and ')} can't be read.`)
+    const key = badServices && badPayments ? 'both' : badServices ? 'services' : 'payments'
+    throw new AppError(`This backup is damaged: ${parts.join(' and ')} can't be read.`, `errors.damaged.${key}`, {
+      services: badServices,
+      payments: badPayments,
+    })
   }
 
   return {

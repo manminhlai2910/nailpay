@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#db2777"/>
+  <!-- nail polish bottle, kept inside the maskable safe zone -->
+  <g fill="#fff">
+    <rect x="221" y="108" width="70" height="104" rx="14"/>
+    <rect x="200" y="200" width="112" height="32" rx="8"/>
+    <rect x="148" y="224" width="216" height="184" rx="44"/>
+  </g>
+  <text x="256" y="372" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="132" font-weight="700" fill="#db2777">$</text>
+</svg>

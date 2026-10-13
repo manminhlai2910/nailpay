@@ -1,5 +1,8 @@
 import { useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
+import { errorText } from '../i18n'
 import { formatDay, today } from '../lib/dates'
+import { AppError } from '../lib/errors'
 import { newId } from '../lib/id'
 import { formatMoney, parsePrices, paymentTotal, PAYMENT_METHODS, type Payment, type PaymentMethod } from '../lib/pay'
 
@@ -26,6 +29,8 @@ function centsToInput(cents: number): string {
 }
 
 export default function PaymentsSection({ month, payments, setPayments }: Props) {
+  const { t, i18n } = useTranslation()
+  const lang = i18n.language
   const [editingId, setEditingId] = useState<string | null>(null)
   const inMonth = payments
     .filter((p) => p.date.startsWith(`${month}-`))
@@ -47,15 +52,15 @@ export default function PaymentsSection({ month, payments, setPayments }: Props)
 
   return (
     <section className="mt-6">
-      <h2 className="text-lg font-semibold">Payments received</h2>
+      <h2 className="text-lg font-semibold">{t('payments.title')}</h2>
 
       <div className="mt-2 rounded-2xl bg-white p-4 shadow-sm">
         {/* key resets the form (and its default date) when the month changes */}
-        <PaymentForm key={month} month={month} initial={{ date: defaultDate(month) }} submitLabel="Add" onSubmit={add} />
+        <PaymentForm key={month} month={month} initial={{ date: defaultDate(month) }} submitLabel={t('common.add')} onSubmit={add} />
       </div>
 
       {inMonth.length === 0 ? (
-        <p className="mt-4 text-sm text-gray-500">No payments this month yet.</p>
+        <p className="mt-4 text-sm text-gray-500">{t('payments.none')}</p>
       ) : (
         <ul className="mt-4 space-y-2">
           {inMonth.map((p) => (
@@ -67,9 +72,9 @@ export default function PaymentsSection({ month, payments, setPayments }: Props)
                   aria-expanded={p.id === editingId}
                   className="flex min-w-0 flex-1 items-baseline gap-3 py-3 pl-4 text-left"
                 >
-                  <span className="w-24 shrink-0 font-medium">{formatDay(p.date)}</span>
+                  <span className="w-28 shrink-0 font-medium">{formatDay(p.date, lang)}</span>
                   <span className="min-w-0 flex-1 truncate text-sm text-gray-500">
-                    {p.method}
+                    {t(`method.${p.method}`)}
                     {p.note && ` · ${p.note}`}
                   </span>
                   <span className="font-semibold tabular-nums">{formatMoney(p.amountCents)}</span>
@@ -77,7 +82,7 @@ export default function PaymentsSection({ month, payments, setPayments }: Props)
                 <button
                   type="button"
                   onClick={() => remove(p.id)}
-                  aria-label={`Delete ${formatMoney(p.amountCents)} payment on ${formatDay(p.date)}`}
+                  aria-label={t('payments.delete', { amount: formatMoney(p.amountCents), date: formatDay(p.date, lang) })}
                   className="px-4 py-3 text-gray-400 hover:text-red-600"
                 >
                   ×
@@ -88,7 +93,7 @@ export default function PaymentsSection({ month, payments, setPayments }: Props)
                   <PaymentForm
                     month={month}
                     initial={p}
-                    submitLabel="Save"
+                    submitLabel={t('common.save')}
                     onSubmit={(fields) => update({ ...fields, id: p.id })}
                     onCancel={() => setEditingId(null)}
                   />
@@ -100,7 +105,7 @@ export default function PaymentsSection({ month, payments, setPayments }: Props)
       )}
 
       <p className="mt-4 flex items-baseline font-semibold">
-        <span className="flex-1">Total paid this month</span>
+        <span className="flex-1">{t('payments.total')}</span>
         <span className="tabular-nums">{formatMoney(paymentTotal(inMonth))}</span>
       </p>
     </section>
@@ -125,14 +130,15 @@ function PaymentForm({
   const [method, setMethod] = useState<PaymentMethod>(initial.method ?? 'Cash')
   const [note, setNote] = useState(initial.note ?? '')
   const [error, setError] = useState('')
+  const { t } = useTranslation()
 
   function submit(e: FormEvent) {
     e.preventDefault()
     try {
       const prices = parsePrices(amount)
-      if (prices.length > 1) throw new Error('Amount: enter one amount')
+      if (prices.length > 1) throw new AppError('Enter one amount', 'errors.oneAmount')
       const amountCents = prices[0]
-      if (!amountCents) throw new Error('Amount is required')
+      if (!amountCents) throw new AppError('Amount is required', 'errors.amountRequired')
       onSubmit({ date, amountCents, method, note: note.trim() || undefined })
       if (!onCancel) {
         // adding: clear for the next payment, keep date and method
@@ -141,7 +147,7 @@ function PaymentForm({
       }
       setError('')
     } catch (err) {
-      setError((err as Error).message)
+      setError(errorText(err, t))
     }
   }
 
@@ -151,7 +157,7 @@ function PaymentForm({
     <form onSubmit={submit} className="space-y-2">
       <div className="grid grid-cols-2 gap-2">
         <label className="text-xs text-gray-600">
-          Date
+          {t('common.date')}
           <input
             type="date"
             value={date}
@@ -162,11 +168,11 @@ function PaymentForm({
           />
         </label>
         <label className="text-xs text-gray-600">
-          Amount ($)
+          {t('payments.amount')}
           <input
             inputMode="decimal"
             autoComplete="off"
-            placeholder="e.g. 1500"
+            placeholder={t('payments.amountPlaceholder')}
             value={amount}
             onChange={(e) => {
               setAmount(e.target.value)
@@ -179,15 +185,17 @@ function PaymentForm({
       </div>
       <div className="grid grid-cols-2 gap-2">
         <label className="text-xs text-gray-600">
-          Method
+          {t('payments.method')}
           <select value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)} className={field}>
             {PAYMENT_METHODS.map((m) => (
-              <option key={m}>{m}</option>
+              <option key={m} value={m}>
+                {t(`method.${m}`)}
+              </option>
             ))}
           </select>
         </label>
         <label className="text-xs text-gray-600">
-          Note
+          {t('common.note')}
           <input value={note} onChange={(e) => setNote(e.target.value)} className={field} />
         </label>
       </div>
@@ -195,7 +203,7 @@ function PaymentForm({
       <div className="flex justify-end gap-2 pt-1">
         {onCancel && (
           <button type="button" onClick={onCancel} className="rounded-lg px-4 py-2 text-sm text-gray-600">
-            Cancel
+            {t('common.cancel')}
           </button>
         )}
         <button type="submit" className="rounded-lg bg-pink-600 px-4 py-2 text-sm font-medium text-white">

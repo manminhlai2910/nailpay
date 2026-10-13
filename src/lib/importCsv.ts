@@ -1,5 +1,6 @@
 // Pure CSV import: parse a spreadsheet export into services. All money is integer cents.
 
+import type { Message } from './errors'
 import type { Service } from './pay'
 
 /** Split CSV text into rows of cells. Handles quoted cells ("$1,035.00", "say ""hi"""), CRLF and a leading BOM. */
@@ -106,7 +107,7 @@ export interface ImportRow {
 
 export interface FlaggedRow {
   row: number
-  reason: string
+  reason: Message
   cells: string[]
 }
 
@@ -136,27 +137,31 @@ export function analyzeCsv(csvRows: string[][], columns: ColumnMap): ImportAnaly
     const name = cell(cells, 'service')
     if (TOTAL_RE.test(dateText) || TOTAL_RE.test(name)) return
 
-    const flag = (reason: string) => flagged.push({ row, reason, cells })
+    const flag = (key: string, value?: string) => {
+      const reason: Message = { key: `import.flag.${key}` }
+      if (value !== undefined) reason.params = { value }
+      flagged.push({ row, reason, cells })
+    }
 
     let date: string | null
     if (dateText === '') {
-      if (!lastDate) return flag('No date, and no date in the rows above')
+      if (!lastDate) return flag('noDate')
       date = lastDate
     } else {
       date = parseCsvDate(dateText)
       // later blank-date rows belong to this unreadable day, so don't let them inherit the previous day
       lastDate = date
-      if (!date) return flag(`Unreadable date "${dateText}"`)
+      if (!date) return flag('badDate', dateText)
     }
 
     const priceText = cell(cells, 'price')
-    if (priceText === '') return flag('No price')
+    if (priceText === '') return flag('noPrice')
     const priceCents = parseCsvMoney(priceText)
-    if (priceCents === null) return flag(`Unreadable price "${priceText}"`)
+    if (priceCents === null) return flag('badPrice', priceText)
 
     const tipText = cell(cells, 'tip')
     const tipCents = tipText === '' ? 0 : parseCsvMoney(tipText)
-    if (tipCents === null) return flag(`Unreadable tip "${tipText}"`)
+    if (tipCents === null) return flag('badTip', tipText)
 
     const note = cell(cells, 'note')
     rows.push({

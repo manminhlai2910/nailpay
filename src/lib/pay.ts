@@ -1,6 +1,7 @@
 // Pure pay calculations. All money is integer cents.
 
 import { addMonths } from './dates'
+import { AppError } from './errors'
 
 export interface Service {
   id: string
@@ -23,7 +24,7 @@ export function parsePrices(text: string): number[] {
     .filter((part) => part !== '')
     .map((part) => {
       const match = PRICE_RE.exec(part)
-      if (!match) throw new Error(`Invalid price: "${part}"`)
+      if (!match) throw new AppError(`Invalid price: "${part}"`, 'errors.invalidPrice', { value: part })
       const dollars = Number(match[1])
       const cents = Number((match[2] ?? '').padEnd(2, '0'))
       return dollars * 100 + cents
@@ -49,7 +50,7 @@ export function parseSignedAmount(text: string): number {
   const trimmed = text.trim()
   const negative = trimmed.startsWith('-')
   const prices = parsePrices(negative ? trimmed.slice(1) : trimmed)
-  if (prices.length > 1) throw new Error('Enter one amount')
+  if (prices.length > 1) throw new AppError('Enter one amount', 'errors.oneAmount')
   const cents = prices[0] ?? 0
   return negative ? -cents : cents
 }

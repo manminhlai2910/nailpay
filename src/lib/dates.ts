@@ -13,22 +13,28 @@ export function currentMonth(): string {
   return today().slice(0, 7)
 }
 
-/** "2026-10" -> "October 2026" */
-export function formatMonth(month: string): string {
+// Display formatters take a locale ("en", "vi"); omitted means the browser's.
+
+const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
+const isVietnamese = (locale?: string) => locale?.startsWith('vi') ?? false
+
+/** "2026-10" -> "October 2026" / "Tháng 10 năm 2026" */
+export function formatMonth(month: string, locale?: string): string {
   const [y, m] = month.split('-').map(Number)
-  return new Date(y, m - 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+  return capitalize(new Date(y, m - 1).toLocaleDateString(locale, { month: 'long', year: 'numeric' }))
 }
 
-/** "2026-10" -> "Oct" */
-export function formatMonthShort(month: string): string {
+/** "2026-10" -> "Oct" / "T10" (Intl's "Tháng 10" is too wide for chart labels) */
+export function formatMonthShort(month: string, locale?: string): string {
   const [y, m] = month.split('-').map(Number)
-  return new Date(y, m - 1).toLocaleDateString(undefined, { month: 'short' })
+  if (isVietnamese(locale)) return `T${m}`
+  return new Date(y, m - 1).toLocaleDateString(locale, { month: 'short' })
 }
 
-/** "2026-10-01" -> "Thu, Oct 1" */
-export function formatDay(date: string): string {
+/** "2026-10-01" -> "Thu, Oct 1" / "Thứ 5, 1 thg 10" */
+export function formatDay(date: string, locale?: string): string {
   const [y, m, d] = date.split('-').map(Number)
-  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+  return new Date(y, m - 1, d).toLocaleDateString(locale, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -42,8 +48,9 @@ export function addMonths(month: string, n: number): string {
   return `${Math.floor(total / 12)}-${pad((total % 12) + 1)}`
 }
 
-/** "2026-10" -> "Oct 2026" */
-export function formatMonthYearShort(month: string): string {
+/** "2026-10" -> "Oct 2026" / "10/2026" */
+export function formatMonthYearShort(month: string, locale?: string): string {
   const [y, m] = month.split('-').map(Number)
-  return new Date(y, m - 1).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
+  if (isVietnamese(locale)) return `${m}/${y}`
+  return new Date(y, m - 1).toLocaleDateString(locale, { month: 'short', year: 'numeric' })
 }

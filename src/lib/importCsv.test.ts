@@ -108,12 +108,12 @@ describe('analyzeCsv', () => {
     const { rows, flagged } = analyzeCsv(csv, { date: 0, price: 1, service: 2, tip: 3, note: -1 })
     expect(rows).toEqual([])
     expect(flagged.map((f) => [f.row, f.reason])).toEqual([
-      [2, 'No date, and no date in the rows above'],
-      [3, 'Unreadable date "Oct 1"'],
-      [4, 'No date, and no date in the rows above'], // belongs to the unreadable day, not an earlier one
-      [5, 'Unreadable price "abc"'],
-      [6, 'No price'],
-      [7, 'Unreadable tip "x"'],
+      [2, { key: 'import.flag.noDate' }],
+      [3, { key: 'import.flag.badDate', params: { value: 'Oct 1' } }],
+      [4, { key: 'import.flag.noDate' }], // belongs to the unreadable day, not an earlier one
+      [5, { key: 'import.flag.badPrice', params: { value: 'abc' } }],
+      [6, { key: 'import.flag.noPrice' }],
+      [7, { key: 'import.flag.badTip', params: { value: 'x' } }],
     ])
   })
 

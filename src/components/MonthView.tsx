@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { formatDay, formatMonth } from '../lib/dates'
 import { downloadFile } from '../lib/download'
 import { servicesToCsv } from '../lib/exportCsv'
@@ -13,6 +14,8 @@ interface Props {
 }
 
 export default function MonthView({ month, services, onUpdate, onRemove }: Props) {
+  const { t, i18n } = useTranslation()
+  const lang = i18n.language
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const days = groupByDay(services, month)
   const inMonth = days.flatMap((d) => d.services)
@@ -29,25 +32,25 @@ export default function MonthView({ month, services, onUpdate, onRemove }: Props
   return (
     <section className="mt-6">
       <div className="flex items-baseline justify-between">
-        <h2 className="text-lg font-semibold">{formatMonth(month)}</h2>
+        <h2 className="text-lg font-semibold">{formatMonth(month, lang)}</h2>
         <button
           type="button"
           onClick={() => downloadFile(`nailpay-services-${month}.csv`, servicesToCsv(services, month), 'text/csv')}
           disabled={inMonth.length === 0}
           className="text-sm font-medium text-pink-600 disabled:text-gray-300"
         >
-          Export CSV
+          {t('monthView.exportCsv')}
         </button>
       </div>
 
       <dl className="mt-2 grid grid-cols-3 gap-2 text-center">
-        <Stat label="Services" value={String(inMonth.length)} />
-        <Stat label="Total price" value={formatMoney(monthTotal(inMonth))} />
-        <Stat label="Total tips" value={formatMoney(tipTotal(inMonth))} />
+        <Stat label={t('monthView.services')} value={String(inMonth.length)} />
+        <Stat label={t('monthView.totalPrice')} value={formatMoney(monthTotal(inMonth))} />
+        <Stat label={t('monthView.totalTips')} value={formatMoney(tipTotal(inMonth))} />
       </dl>
 
       {days.length === 0 ? (
-        <p className="mt-4 text-sm text-gray-500">No services in {formatMonth(month)} yet.</p>
+        <p className="mt-4 text-sm text-gray-500">{t('common.noServicesIn', { month: formatMonth(month, lang) })}</p>
       ) : (
         <ul className="mt-4 space-y-2">
           {days.map((day) => {
@@ -60,10 +63,8 @@ export default function MonthView({ month, services, onUpdate, onRemove }: Props
                   aria-expanded={open}
                   className="flex w-full items-center gap-3 px-4 py-3 text-left"
                 >
-                  <span className="flex-1 font-medium">{formatDay(day.date)}</span>
-                  <span className="text-sm text-gray-500">
-                    {day.services.length} service{day.services.length === 1 ? '' : 's'}
-                  </span>
+                  <span className="flex-1 font-medium">{formatDay(day.date, lang)}</span>
+                  <span className="text-sm text-gray-500">{t('count.service', { count: day.services.length })}</span>
                   <span className="w-24 text-right font-semibold">{formatMoney(day.totalCents)}</span>
                   <span className={`text-gray-400 transition-transform ${open ? 'rotate-90' : ''}`}>›</span>
                 </button>

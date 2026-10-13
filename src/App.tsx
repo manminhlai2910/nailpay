@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import BackupSection from './components/BackupSection'
 import DashboardTab from './components/DashboardTab'
 import ImportCsv from './components/ImportCsv'
+import LanguageToggle from './components/LanguageToggle'
 import MonthlyPayTab from './components/MonthlyPayTab'
 import ServicesTab from './components/ServicesTab'
 import SettingsTab from './components/SettingsTab'
@@ -21,12 +23,13 @@ import {
   saveStartingBalance,
 } from './lib/storage'
 
-const TABS = ['Dashboard', 'Services', 'Monthly Pay', 'Settings'] as const
+const TABS = ['dashboard', 'services', 'pay', 'settings'] as const
 type Tab = (typeof TABS)[number]
 
 export default function App() {
+  const { t } = useTranslation()
   const [month, setMonth] = useState(currentMonth)
-  const [tab, setTab] = useState<Tab>('Dashboard')
+  const [tab, setTab] = useState<Tab>('dashboard')
   const [services, setServices] = useState<Service[]>(() => loadServices())
   const [payments, setPayments] = useState<Payment[]>(() => loadPayments())
 
@@ -54,9 +57,12 @@ export default function App() {
     <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-gray-50 text-gray-900 print:min-h-0 print:max-w-none print:bg-white">
       <div className="sticky top-0 z-10 shadow print:hidden">
         <header className="bg-pink-600 px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-3 text-white">
-          <h1 className="text-2xl font-bold tracking-tight">NailPay</h1>
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="text-2xl font-bold tracking-tight">NailPay</h1>
+            <LanguageToggle />
+          </div>
           <label className="mt-3 flex items-center gap-2 text-sm">
-            <span className="sr-only">Month</span>
+            <span className="sr-only">{t('month')}</span>
             <input
               type="month"
               value={month}
@@ -67,28 +73,28 @@ export default function App() {
         </header>
 
         <nav className="grid grid-cols-4 border-b border-gray-200 bg-white">
-          {TABS.map((t) => (
+          {TABS.map((id) => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`py-3 text-sm font-medium transition-colors ${
-                tab === t ? 'border-b-2 border-pink-600 text-pink-600' : 'text-gray-500'
+              key={id}
+              onClick={() => setTab(id)}
+              className={`px-1 py-3 text-sm leading-tight font-medium transition-colors ${
+                tab === id ? 'border-b-2 border-pink-600 text-pink-600' : 'text-gray-500'
               }`}
             >
-              {t}
+              {t(`tabs.${id}`)}
             </button>
           ))}
         </nav>
       </div>
 
       <main className="flex-1 p-4 print:p-0">
-        {tab === 'Dashboard' && (
+        {tab === 'dashboard' && (
           <DashboardTab month={month} data={{ services, payments, settingsHistory, startingBalance }} />
         )}
-        {tab === 'Services' && (
+        {tab === 'services' && (
           <ServicesTab services={services} setServices={setServices} month={month} setMonth={setMonth} />
         )}
-        {tab === 'Monthly Pay' && (
+        {tab === 'pay' && (
           <MonthlyPayTab
             month={month}
             data={{ services, payments, settingsHistory, startingBalance }}
@@ -96,7 +102,7 @@ export default function App() {
             profile={profile}
           />
         )}
-        {tab === 'Settings' && (
+        {tab === 'settings' && (
           <SettingsTab
             key={`${month}-${restores}`} // reload the fields for the newly picked month, or after a restore
             month={month}
@@ -108,7 +114,7 @@ export default function App() {
             onProfileChange={setProfile}
           />
         )}
-        {tab === 'Settings' && (
+        {tab === 'settings' && (
           <>
             <ImportCsv services={services} setServices={setServices} />
             <BackupSection

@@ -1,4 +1,5 @@
 import { useMemo, useState, type ChangeEvent } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { formatMonthYearShort } from '../lib/dates'
 import { newId } from '../lib/id'
 import {
@@ -20,13 +21,6 @@ interface Props {
   setServices: (update: (prev: Service[]) => Service[]) => void
 }
 
-const FIELD_LABELS: Record<ImportField, string> = {
-  date: 'Date',
-  price: 'Price',
-  service: 'Service',
-  tip: 'Tip',
-  note: 'Note',
-}
 const REQUIRED: ImportField[] = ['date', 'price']
 
 interface Loaded {
@@ -36,6 +30,9 @@ interface Loaded {
 
 /** Import services from a CSV saved out of Excel. Nothing is saved until the import is confirmed. */
 export default function ImportCsv({ services, setServices }: Props) {
+  const { t, i18n } = useTranslation()
+  const lang = i18n.language
+  const fieldLabel = (field: ImportField) => t(`import.field.${field}`)
   const [loaded, setLoaded] = useState<Loaded | null>(null)
   const [columns, setColumns] = useState<ColumnMap | null>(null)
   const [choices, setChoices] = useState<Record<string, ConflictChoice>>({})
@@ -50,7 +47,7 @@ export default function ImportCsv({ services, setServices }: Props) {
     setDone('')
     try {
       const csv = parseCsv(await file.text())
-      if (csv.length < 2) throw new Error('That file has no rows under the header.')
+      if (csv.length < 2) throw new Error(t('errors.csvNoRows'))
       setLoaded({ fileName: file.name, csv })
       setColumns(guessColumns(csv[0]))
       setChoices({})
@@ -88,8 +85,9 @@ export default function ImportCsv({ services, setServices }: Props) {
     if (!analysis) return
     setServices((prev) => applyImport(prev, analysis.rows, choices, newId))
     setDone(
-      `Imported ${toImport.length} ${toImport.length === 1 ? 'service' : 'services'}` +
-        (replacedCount ? ` and replaced ${replacedCount} existing.` : '.'),
+      replacedCount
+        ? t('import.doneReplaced', { count: toImport.length, replaced: replacedCount })
+        : t('import.done', { count: toImport.length }),
     )
     reset()
   }
@@ -100,15 +98,12 @@ export default function ImportCsv({ services, setServices }: Props) {
   return (
     <section className="mt-4 space-y-4 rounded-2xl bg-white p-4 shadow-sm">
       <div>
-        <h2 className="font-semibold">Import from Excel (CSV)</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          In Excel, choose File › Save As › CSV. The first row should be column names. Columns: Date and Price, plus
-          optional Service, Tip and Note.
-        </p>
+        <h2 className="font-semibold">{t('import.title')}</h2>
+        <p className="mt-1 text-sm text-gray-500">{t('import.help')}</p>
       </div>
 
       <label className="block">
-        <span className="sr-only">CSV file</span>
+        <span className="sr-only">{t('import.file')}</span>
         <input
           type="file"
           accept=".csv,text/csv"
@@ -122,12 +117,13 @@ export default function ImportCsv({ services, setServices }: Props) {
       {loaded && columns && (
         <>
           <fieldset className="border-t border-gray-100 pt-3">
-            <legend className="text-sm font-medium text-gray-600">Columns in {loaded.fileName}</legend>
+            <legend className="text-sm font-medium text-gray-600">
+              {t('import.columnsIn', { file: loaded.fileName })}
+            </legend>
             <div className="mt-1 grid grid-cols-2 gap-3">
               {IMPORT_FIELDS.map((field) => (
                 <label key={field} className="block text-sm text-gray-600">
-                  {FIELD_LABELS[field]}
-                  {REQUIRED.includes(field) ? '' : ' (optional)'}
+                  {REQUIRED.includes(field) ? fieldLabel(field) : t('import.optional', { field: fieldLabel(field) })}
                   <select
                     value={columns[field]}
                     onChange={(e) => {
@@ -137,10 +133,10 @@ export default function ImportCsv({ services, setServices }: Props) {
                     aria-invalid={columns[field] < 0 && REQUIRED.includes(field)}
                     className={`${select} aria-invalid:border-red-500`}
                   >
-                    <option value={-1}>{REQUIRED.includes(field) ? 'Choose a column…' : '— none —'}</option>
+                    <option value={-1}>{REQUIRED.includes(field) ? t('import.chooseColumn') : t('import.noColumn')}</option>
                     {headers.map((h, i) => (
                       <option key={i} value={i}>
-                        {h.trim() || `Column ${i + 1}`}
+                        {h.trim() || t('import.columnN', { n: i + 1 })}
                       </option>
                     ))}
                   </select>
@@ -149,7 +145,9 @@ export default function ImportCsv({ services, setServices }: Props) {
             </div>
             {missing.length > 0 && (
               <p className="mt-2 text-sm text-red-600">
-                Pick the {missing.map((f) => FIELD_LABELS[f]).join(' and ')} column to see the preview.
+                {t('import.pickMissing', {
+                  fields: new Intl.ListFormat(lang, { type: 'conjunction' }).format(missing.map(fieldLabel)),
+                })}
               </p>
             )}
           </fieldset>
@@ -158,20 +156,20 @@ export default function ImportCsv({ services, setServices }: Props) {
             <>
               <div className="border-t border-gray-100 pt-3 text-sm">
                 <p>
-                  <span className="font-semibold text-green-700">{analysis.rows.length} rows OK</span>
+                  <span className="font-semibold text-green-700">
+                    {t('import.rowsOk', { count: analysis.rows.length })}
+                  </span>
                   {' · '}
                   <span className={analysis.flagged.length ? 'font-semibold text-red-600' : 'text-gray-500'}>
-                    {analysis.flagged.length} flagged
+                    {t('import.flagged', { count: analysis.flagged.length })}
                   </span>
-                  {analysis.flagged.length > 0 && <span className="text-gray-500"> (won't be imported)</span>}
+                  {analysis.flagged.length > 0 && <span className="text-gray-500"> {t('import.wontImport')}</span>}
                 </p>
                 <ul className="mt-2 space-y-1">
                   {months.map((m) => (
                     <li key={m.month} className="flex items-baseline gap-2">
-                      <span className="w-20 shrink-0 font-medium">{formatMonthYearShort(m.month)}</span>
-                      <span className="flex-1 text-gray-500">
-                        {m.count} {m.count === 1 ? 'service' : 'services'}
-                      </span>
+                      <span className="w-20 shrink-0 font-medium">{formatMonthYearShort(m.month, lang)}</span>
+                      <span className="flex-1 text-gray-500">{t('count.service', { count: m.count })}</span>
                       <span className="tabular-nums">{formatMoney(m.totalCents)}</span>
                     </li>
                   ))}
@@ -180,14 +178,11 @@ export default function ImportCsv({ services, setServices }: Props) {
 
               {conflicts.length > 0 && (
                 <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm">
-                  <p className="font-medium text-amber-900">
-                    {conflicts.length === 1 ? 'This month already has' : 'These months already have'} services in
-                    NailPay:
-                  </p>
+                  <p className="font-medium text-amber-900">{t('import.conflicts', { count: conflicts.length })}</p>
                   <ul className="mt-2 space-y-2">
                     {conflicts.map((m) => (
                       <li key={m} className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                        <span className="w-20 font-medium">{formatMonthYearShort(m)}</span>
+                        <span className="w-20 font-medium">{formatMonthYearShort(m, lang)}</span>
                         {(['replace', 'skip'] as const).map((choice) => (
                           <label key={choice} className="flex items-center gap-1.5">
                             <input
@@ -200,7 +195,7 @@ export default function ImportCsv({ services, setServices }: Props) {
                               }}
                               className="accent-pink-600"
                             />
-                            {choice === 'replace' ? 'Replace that month' : 'Skip'}
+                            {choice === 'replace' ? t('import.replaceMonth') : t('import.skip')}
                           </label>
                         ))}
                       </li>
@@ -213,11 +208,11 @@ export default function ImportCsv({ services, setServices }: Props) {
                 <table className="w-full text-left text-sm">
                   <thead className="sticky top-0 bg-gray-50 text-xs text-gray-500">
                     <tr>
-                      <th className="px-2 py-1.5 font-medium">Row</th>
-                      <th className="px-2 py-1.5 font-medium">Date</th>
-                      <th className="px-2 py-1.5 font-medium">Service</th>
-                      <th className="px-2 py-1.5 text-right font-medium">Price</th>
-                      <th className="px-2 py-1.5 text-right font-medium">Tip</th>
+                      <th className="px-2 py-1.5 font-medium">{t('import.colRow')}</th>
+                      <th className="px-2 py-1.5 font-medium">{fieldLabel('date')}</th>
+                      <th className="px-2 py-1.5 font-medium">{fieldLabel('service')}</th>
+                      <th className="px-2 py-1.5 text-right font-medium">{fieldLabel('price')}</th>
+                      <th className="px-2 py-1.5 text-right font-medium">{fieldLabel('tip')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -225,7 +220,7 @@ export default function ImportCsv({ services, setServices }: Props) {
                       <tr key={`f${f.row}`} className="bg-red-50 text-red-700">
                         <td className="px-2 py-1.5 tabular-nums">{f.row}</td>
                         <td colSpan={4} className="px-2 py-1.5">
-                          <span className="font-medium">{f.reason}</span>
+                          <span className="font-medium">{t(f.reason.key, f.reason.params)}</span>
                           <span className="block truncate text-xs text-red-500">{f.cells.join(' · ')}</span>
                         </td>
                       </tr>
@@ -248,16 +243,18 @@ export default function ImportCsv({ services, setServices }: Props) {
               {confirming ? (
                 <div className="space-y-3 rounded-lg border border-pink-200 bg-pink-50 p-3 text-sm">
                   <p>
-                    Add <span className="font-semibold">{toImport.length}</span>{' '}
-                    {toImport.length === 1 ? 'service' : 'services'}
-                    {replacedCount > 0 && (
-                      <>
-                        {' '}
-                        and <span className="font-semibold text-red-700">delete {replacedCount} existing</span> in{' '}
-                        {replaced.map(formatMonthYearShort).join(', ')}
-                      </>
-                    )}
-                    ? This can't be undone.
+                    <Trans
+                      i18nKey={replacedCount > 0 ? 'import.confirmAddReplace' : 'import.confirmAdd'}
+                      count={toImport.length}
+                      values={{
+                        replaced: replacedCount,
+                        months: replaced.map((m) => formatMonthYearShort(m, lang)).join(', '),
+                      }}
+                      components={{
+                        b: <span className="font-semibold" />,
+                        del: <span className="font-semibold text-red-700" />,
+                      }}
+                    />
                   </p>
                   <div className="flex gap-2">
                     <button
@@ -265,14 +262,14 @@ export default function ImportCsv({ services, setServices }: Props) {
                       onClick={confirmImport}
                       className="flex-1 rounded-lg bg-pink-600 py-2 font-medium text-white"
                     >
-                      Yes, import
+                      {t('import.yesImport')}
                     </button>
                     <button
                       type="button"
                       onClick={() => setConfirming(false)}
                       className="flex-1 rounded-lg border border-gray-300 bg-white py-2 font-medium text-gray-700"
                     >
-                      Cancel
+                      {t('common.cancel')}
                     </button>
                   </div>
                 </div>
@@ -284,10 +281,10 @@ export default function ImportCsv({ services, setServices }: Props) {
                     disabled={toImport.length === 0}
                     className="flex-1 rounded-lg bg-pink-600 py-2 font-medium text-white disabled:opacity-40"
                   >
-                    Import {toImport.length} {toImport.length === 1 ? 'service' : 'services'}
+                    {t('import.importN', { count: toImport.length })}
                   </button>
                   <button type="button" onClick={reset} className="text-sm text-gray-500">
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                 </div>
               )}

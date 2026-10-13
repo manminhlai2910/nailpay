@@ -1,0 +1,192 @@
+{
+  "language": "Ngôn ngữ",
+  "month": "Tháng",
+  "tabs": {
+    "dashboard": "Tổng quan",
+    "services": "Dịch vụ",
+    "pay": "Lương tháng",
+    "settings": "Cài đặt"
+  },
+  "common": {
+    "add": "Thêm",
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "date": "Ngày",
+    "note": "Ghi chú",
+    "noServicesIn": "Chưa có dịch vụ nào trong {{month}}."
+  },
+  "count": {
+    "service_other": "{{count}} dịch vụ",
+    "payment_other": "{{count}} khoản thanh toán"
+  },
+  "method": {
+    "Cash": "Tiền mặt",
+    "Check": "Séc",
+    "Zelle": "Zelle"
+  },
+  "errors": {
+    "invalidPrice": "Giá không hợp lệ: \"{{value}}\"",
+    "oneAmount": "Chỉ nhập một số tiền",
+    "fieldOneAmount": "{{field}}: chỉ nhập một số tiền",
+    "priceRequired": "Cần nhập giá",
+    "amountRequired": "Cần nhập số tiền",
+    "rateRange": "Nhập số nguyên từ 0 đến 100",
+    "notBackup": "Tệp này không phải bản sao lưu NailPay.",
+    "newerBackup": "Bản sao lưu này được tạo bởi phiên bản NailPay mới hơn.",
+    "damaged": {
+      "services": "Bản sao lưu bị hỏng: không đọc được $t(count.service, {\"count\": {{services}} }).",
+      "payments": "Bản sao lưu bị hỏng: không đọc được $t(count.payment, {\"count\": {{payments}} }).",
+      "both": "Bản sao lưu bị hỏng: không đọc được $t(count.service, {\"count\": {{services}} }) và $t(count.payment, {\"count\": {{payments}} })."
+    },
+    "csvNoRows": "Tệp này không có dòng nào dưới dòng tiêu đề."
+  },
+  "entry": {
+    "price": "Giá ($)",
+    "addAmount": "Thêm {{amount}}",
+    "keypad": "Bàn phím số",
+    "backspace": "Xóa số cuối",
+    "dayTotal": "Tổng ngày: {{amount}}"
+  },
+  "chips": {
+    "none": "Chưa có dịch vụ nào.",
+    "hasNote": "có ghi chú",
+    "remove": "Xóa {{amount}}",
+    "price": "Giá",
+    "tip": "Tiền tip",
+    "priceLabel": "Giá ($)",
+    "tipLabel": "Tiền tip ($)",
+    "name": "Tên dịch vụ",
+    "namePlaceholder": "VD: Sơn gel tay"
+  },
+  "monthView": {
+    "exportCsv": "Xuất CSV",
+    "services": "Dịch vụ",
+    "totalPrice": "Tổng giá",
+    "totalTips": "Tổng tiền tip"
+  },
+  "dashboard": {
+    "services": "Dịch vụ",
+    "gross": "Tổng doanh thu",
+    "netSoFar": "Thực nhận đến nay",
+    "tips": "Tiền tip",
+    "balanceOwed": "Số dư còn nợ",
+    "chartTitle": "Thực nhận 12 tháng gần nhất",
+    "netEarned": "Thực nhận",
+    "topTitle": "Dịch vụ hàng đầu tháng này",
+    "unnamed": "Không tên",
+    "history": "Lịch sử",
+    "colMonth": "Tháng",
+    "colServices": "Dịch vụ",
+    "colNet": "Thực nhận",
+    "colPaid": "Đã trả",
+    "colCarried": "Chuyển tiếp"
+  },
+  "pay": {
+    "print": "In bảng lương",
+    "profileHint": "Thêm tên của bạn và tên tiệm trong Cài đặt để hiện trên bảng lương.",
+    "paidInFull": "Đã trả đủ",
+    "ownerOwes": "Chủ tiệm còn nợ bạn {{amount}}",
+    "youOwe": "Bạn còn nợ chủ tiệm {{amount}}",
+    "totalServices_other": "Tổng dịch vụ ({{count}} dịch vụ)",
+    "commission": "Hoa hồng ({{rate}}%)",
+    "rent": "Tiền thuê",
+    "netEarned": "Thực nhận",
+    "startingBalance": "Số dư ban đầu",
+    "owedLastMonth": "Còn nợ từ tháng trước",
+    "totalDueFromOwner": "Tổng chủ tiệm phải trả",
+    "paidByOwner": "Chủ tiệm đã trả",
+    "carryNext": "Số dư chuyển sang tháng sau",
+    "tipsThisMonth": "Tiền tip tháng này:",
+    "tipsNote": "(không tính hoa hồng)"
+  },
+  "payments": {
+    "title": "Tiền đã nhận",
+    "none": "Chưa có khoản thanh toán nào trong tháng này.",
+    "delete": "Xóa khoản {{amount}} ngày {{date}}",
+    "total": "Tổng đã nhận tháng này",
+    "amount": "Số tiền ($)",
+    "amountPlaceholder": "VD: 1500",
+    "method": "Hình thức"
+  },
+  "statement": {
+    "title": "Bảng lương — {{month}}",
+    "daily": "Tổng kết theo ngày",
+    "services": "Dịch vụ",
+    "dayTotal": "Tổng ngày",
+    "noServices": "Không có dịch vụ nào trong tháng này.",
+    "monthTotal": "Tổng tháng",
+    "calculation": "Tính lương",
+    "totalServices": "Tổng dịch vụ",
+    "totalDue": "Tổng phải trả",
+    "payments": "Tiền đã nhận",
+    "none": "Không có",
+    "totalPaid": "Tổng đã nhận",
+    "carryForward": "Số dư chuyển tiếp",
+    "generated": "Tạo bởi NailPay ngày {{date}}"
+  },
+  "settings": {
+    "appliesFrom": "Thay đổi áp dụng từ <b>{{month}}</b> trở đi. Các tháng trước giữ mức cũ. Chọn tháng ở trên cùng để thay đổi tháng khác.",
+    "commission": "Hoa hồng (%)",
+    "rent": "Tiền thuê hàng tháng ($)",
+    "autosave": "Thay đổi được lưu tự động.",
+    "reset": "Khôi phục mặc định",
+    "startingTitle": "Số dư ban đầu",
+    "startingDesc": "Số tiền chủ tiệm nợ bạn trước khi bắt đầu dùng NailPay. Dùng dấu trừ nếu bạn nợ chủ tiệm.",
+    "amount": "Số tiền ($)",
+    "startMonth": "Tháng bắt đầu",
+    "startHint": "Để trống để bắt đầu từ tháng đầu tiên có dịch vụ hoặc thanh toán.",
+    "profileTitle": "Thông tin của bạn",
+    "profileDesc": "Hiện trên bảng lương khi in.",
+    "name": "Tên của bạn",
+    "salon": "Tên tiệm"
+  },
+  "import": {
+    "title": "Nhập từ Excel (CSV)",
+    "help": "Trong Excel, chọn File › Save As › CSV. Dòng đầu tiên phải là tên cột. Các cột: Ngày và Giá, có thể thêm Dịch vụ, Tiền tip và Ghi chú.",
+    "file": "Tệp CSV",
+    "field": {
+      "date": "Ngày",
+      "price": "Giá",
+      "service": "Dịch vụ",
+      "tip": "Tiền tip",
+      "note": "Ghi chú"
+    },
+    "optional": "{{field}} (không bắt buộc)",
+    "columnsIn": "Các cột trong {{file}}",
+    "chooseColumn": "Chọn cột…",
+    "noColumn": "— không có —",
+    "columnN": "Cột {{n}}",
+    "pickMissing": "Chọn cột {{fields}} để xem trước.",
+    "rowsOk_other": "{{count}} dòng hợp lệ",
+    "flagged": "{{count}} dòng lỗi",
+    "wontImport": "(sẽ không được nhập)",
+    "conflicts_other": "Những tháng sau đã có dịch vụ trong NailPay:",
+    "replaceMonth": "Thay thế tháng đó",
+    "skip": "Bỏ qua",
+    "colRow": "Dòng",
+    "confirmAdd_other": "Thêm <b>{{count}}</b> dịch vụ? Không thể hoàn tác.",
+    "confirmAddReplace_other": "Thêm <b>{{count}}</b> dịch vụ và <del>xóa {{replaced}} dịch vụ hiện có</del> trong {{months}}? Không thể hoàn tác.",
+    "yesImport": "Có, nhập",
+    "importN_other": "Nhập {{count}} dịch vụ",
+    "done_other": "Đã nhập {{count}} dịch vụ.",
+    "doneReplaced_other": "Đã nhập {{count}} dịch vụ và thay thế {{replaced}} dịch vụ cũ.",
+    "flag": {
+      "noDate": "Không có ngày, và các dòng phía trên cũng không có ngày",
+      "badDate": "Không đọc được ngày \"{{value}}\"",
+      "noPrice": "Không có giá",
+      "badPrice": "Không đọc được giá \"{{value}}\"",
+      "badTip": "Không đọc được tiền tip \"{{value}}\""
+    }
+  },
+  "backup": {
+    "title": "Sao lưu",
+    "desc": "Dữ liệu chỉ được lưu trong trình duyệt này. Thỉnh thoảng hãy tải bản sao lưu và cất ở nơi an toàn.",
+    "download": "Tải bản sao lưu",
+    "restore": "Khôi phục từ bản sao lưu",
+    "restored": "Đã khôi phục {{services}} và {{payments}}.",
+    "confirm": "Thay thế <b>toàn bộ</b> dữ liệu trong NailPay ({{currentServices}}, {{currentPayments}} và cài đặt) bằng bản sao lưu này ({{services}}, {{payments}})?",
+    "confirmFrom": "Thay thế <b>toàn bộ</b> dữ liệu trong NailPay ({{currentServices}}, {{currentPayments}} và cài đặt) bằng bản sao lưu ngày {{date}} ({{services}}, {{payments}})?",
+    "lost": "Dữ liệu hiện tại sẽ bị mất. Không thể hoàn tác.",
+    "yesReplace": "Có, thay thế dữ liệu"
+  }
+}

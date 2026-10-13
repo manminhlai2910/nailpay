@@ -1,5 +1,8 @@
 import { useState } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
+import { errorText } from '../i18n'
 import { formatMonth } from '../lib/dates'
+import { AppError } from '../lib/errors'
 import { DEFAULT_SETTINGS, parsePrices, parseSignedAmount, type Settings, type StartingBalance } from '../lib/pay'
 import type { Profile } from '../lib/storage'
 
@@ -29,6 +32,7 @@ export default function SettingsTab({
   profile,
   onProfileChange,
 }: Props) {
+  const { t, i18n } = useTranslation()
   const [rate, setRate] = useState(String(settings.commissionRate))
   const [rent, setRent] = useState(centsToInput(settings.rentCents))
   const [rateError, setRateError] = useState('')
@@ -38,7 +42,7 @@ export default function SettingsTab({
     setRate(text)
     const value = Number(text)
     if (!/^\d+$/.test(text.trim()) || value > 100) {
-      setRateError('Enter a whole number from 0 to 100')
+      setRateError(t('errors.rateRange'))
       return
     }
     setRateError('')
@@ -49,11 +53,11 @@ export default function SettingsTab({
     setRent(text)
     try {
       const prices = parsePrices(text)
-      if (prices.length !== 1) throw new Error('Enter one amount')
+      if (prices.length !== 1) throw new AppError('Enter one amount', 'errors.oneAmount')
       setRentError('')
       onChange({ ...settings, rentCents: prices[0] })
     } catch (err) {
-      setRentError((err as Error).message)
+      setRentError(errorText(err, t))
     }
   }
 
@@ -72,12 +76,15 @@ export default function SettingsTab({
     <>
       <section className="space-y-4 rounded-2xl bg-white p-4 shadow-sm">
         <p className="text-sm text-gray-500">
-          Changes apply from <span className="font-medium text-gray-700">{formatMonth(month)}</span> onward. Earlier
-          months keep their own rates. Pick a month at the top to change it.
+          <Trans
+            i18nKey="settings.appliesFrom"
+            values={{ month: formatMonth(month, i18n.language) }}
+            components={{ b: <span className="font-medium text-gray-700" /> }}
+          />
         </p>
 
         <label className="block text-sm font-medium text-gray-600">
-          Commission (%)
+          {t('settings.commission')}
           <input
             inputMode="numeric"
             value={rate}
@@ -89,7 +96,7 @@ export default function SettingsTab({
         </label>
 
         <label className="block text-sm font-medium text-gray-600">
-          Monthly rent ($)
+          {t('settings.rent')}
           <input
             inputMode="decimal"
             value={rent}
@@ -101,9 +108,9 @@ export default function SettingsTab({
         </label>
 
         <div className="flex items-center justify-between border-t border-gray-100 pt-3">
-          <p className="text-xs text-gray-400">Changes save automatically.</p>
+          <p className="text-xs text-gray-400">{t('settings.autosave')}</p>
           <button type="button" onClick={reset} className="text-sm text-pink-600">
-            Reset to defaults
+            {t('settings.reset')}
           </button>
         </div>
       </section>
@@ -123,6 +130,7 @@ function StartingBalanceSettings({
 }) {
   const [amount, setAmount] = useState(balance.amountCents === 0 ? '' : centsToInput(balance.amountCents))
   const [error, setError] = useState('')
+  const { t } = useTranslation()
 
   function changeAmount(text: string) {
     setAmount(text)
@@ -131,7 +139,7 @@ function StartingBalanceSettings({
       setError('')
       onChange({ ...balance, amountCents })
     } catch (err) {
-      setError((err as Error).message)
+      setError(errorText(err, t))
     }
   }
 
@@ -141,14 +149,12 @@ function StartingBalanceSettings({
   return (
     <section className="mt-4 space-y-4 rounded-2xl bg-white p-4 shadow-sm">
       <div>
-        <h2 className="font-semibold">Starting balance</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          What the owner owed you before you started using NailPay. Use a minus sign if you owed the owner.
-        </p>
+        <h2 className="font-semibold">{t('settings.startingTitle')}</h2>
+        <p className="mt-1 text-sm text-gray-500">{t('settings.startingDesc')}</p>
       </div>
 
       <label className="block text-sm font-medium text-gray-600">
-        Amount ($)
+        {t('settings.amount')}
         <input
           inputMode="decimal"
           placeholder="0"
@@ -161,7 +167,7 @@ function StartingBalanceSettings({
       </label>
 
       <label className="block text-sm font-medium text-gray-600">
-        Start month
+        {t('settings.startMonth')}
         <input
           type="month"
           value={balance.month ?? ''}
@@ -169,7 +175,7 @@ function StartingBalanceSettings({
           className={field}
         />
         <span className="mt-1 block text-xs font-normal text-gray-400">
-          Leave blank to start from your first month with services or payments.
+          {t('settings.startHint')}
         </span>
       </label>
     </section>
@@ -177,17 +183,18 @@ function StartingBalanceSettings({
 }
 
 function ProfileSettings({ profile, onChange }: { profile: Profile; onChange: (profile: Profile) => void }) {
+  const { t } = useTranslation()
   const field = 'mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-base outline-none focus:border-pink-600'
 
   return (
     <section className="mt-4 space-y-4 rounded-2xl bg-white p-4 shadow-sm">
       <div>
-        <h2 className="font-semibold">Your details</h2>
-        <p className="mt-1 text-sm text-gray-500">Shown on the printed pay statement.</p>
+        <h2 className="font-semibold">{t('settings.profileTitle')}</h2>
+        <p className="mt-1 text-sm text-gray-500">{t('settings.profileDesc')}</p>
       </div>
 
       <label className="block text-sm font-medium text-gray-600">
-        Your name
+        {t('settings.name')}
         <input
           autoComplete="name"
           value={profile.name}
@@ -197,7 +204,7 @@ function ProfileSettings({ profile, onChange }: { profile: Profile; onChange: (p
       </label>
 
       <label className="block text-sm font-medium text-gray-600">
-        Salon name
+        {t('settings.salon')}
         <input
           autoComplete="organization"
           value={profile.salonName}

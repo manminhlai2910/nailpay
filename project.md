@@ -23,6 +23,10 @@ React + Vite + TypeScript, Tailwind CSS, localStorage, Vitest.
 
 Keep calculation logic in `src/lib/pay.ts` as pure functions with tests.
 
+English / Tiếng Việt via react-i18next: every label lives in `src/i18n/en.json` and `vi.json` (same keys; a test checks). The choice is saved in localStorage; the printed statement follows it. Pure code returns translation keys (`AppError`, `Message` in `src/lib/errors.ts`), not text. Money stays US-formatted in both languages.
+
+PWA (vite-plugin-pwa): installable with "Add to Home Screen" and works offline after the first visit.
+
 ## Test case
 
 Services $6,200, owed last month $150, paid $3,000

@@ -1,5 +1,6 @@
+import { useTranslation } from 'react-i18next'
 import { Bar, BarChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { addMonths, formatMonth, formatMonthShort } from '../lib/dates'
+import { addMonths, formatMonth, formatMonthShort, formatMonthYearShort } from '../lib/dates'
 import {
   formatMoney,
   startMonth,
@@ -15,6 +16,8 @@ interface Props {
 }
 
 export default function DashboardTab({ month, data }: Props) {
+  const { t, i18n } = useTranslation()
+  const lang = i18n.language
   const inMonth = data.services.filter((s) => s.date.startsWith(`${month}-`))
   const start = startMonth(data) ?? month
   // history runs from the start of the carryover chain to the selected month; the chart shows its last 12 months
@@ -23,7 +26,7 @@ export default function DashboardTab({ month, data }: Props) {
   const chartStart = addMonths(month, -11)
   const chart = statementsBetween(data, chartStart, month).map((s) => ({
     month: s.month,
-    label: formatMonthShort(s.month),
+    label: formatMonthShort(s.month, lang),
     net: s.netEarnedCents / 100,
   }))
   const top = topServicesByRevenue(inMonth, 5)
@@ -31,18 +34,18 @@ export default function DashboardTab({ month, data }: Props) {
   return (
     <section className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">{formatMonth(month)}</h2>
+        <h2 className="text-lg font-semibold">{formatMonth(month, lang)}</h2>
         <dl className="mt-2 grid grid-cols-2 gap-2">
-          <Card label="Services" value={String(inMonth.length)} />
-          <Card label="Gross" value={formatMoney(statement.servicesTotalCents)} />
-          <Card label="Net earned so far" cents={statement.netEarnedCents} />
-          <Card label="Tips" value={formatMoney(tipTotal(inMonth))} />
-          <Card label="Balance owed" cents={statement.carryForwardCents} wide />
+          <Card label={t('dashboard.services')} value={String(inMonth.length)} />
+          <Card label={t('dashboard.gross')} value={formatMoney(statement.servicesTotalCents)} />
+          <Card label={t('dashboard.netSoFar')} cents={statement.netEarnedCents} />
+          <Card label={t('dashboard.tips')} value={formatMoney(tipTotal(inMonth))} />
+          <Card label={t('dashboard.balanceOwed')} cents={statement.carryForwardCents} wide />
         </dl>
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold">Net earned, last 12 months</h2>
+        <h2 className="text-lg font-semibold">{t('dashboard.chartTitle')}</h2>
         <div className="mt-2 h-56 rounded-2xl bg-white py-3 pr-3 shadow-sm">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chart} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
@@ -64,8 +67,8 @@ export default function DashboardTab({ month, data }: Props) {
               <ReferenceLine y={0} stroke="#d1d5db" />
               <Tooltip
                 cursor={{ fill: '#fdf2f8' }}
-                formatter={(value) => [formatMoney(Math.round(Number(value) * 100)), 'Net earned']}
-                labelFormatter={(_, payload) => (payload?.[0] ? formatMonth(payload[0].payload.month) : '')}
+                formatter={(value) => [formatMoney(Math.round(Number(value) * 100)), t('dashboard.netEarned')]}
+                labelFormatter={(_, payload) => (payload?.[0] ? formatMonth(payload[0].payload.month, lang) : '')}
                 contentStyle={{ borderRadius: 8, borderColor: '#e5e7eb', fontSize: 12 }}
               />
               <Bar dataKey="net" fill="#db2777" radius={[4, 4, 0, 0]} maxBarSize={20} isAnimationActive={false} />
@@ -75,15 +78,15 @@ export default function DashboardTab({ month, data }: Props) {
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold">Top services this month</h2>
+        <h2 className="text-lg font-semibold">{t('dashboard.topTitle')}</h2>
         {top.length === 0 ? (
-          <p className="mt-2 text-sm text-gray-500">No services in {formatMonth(month)} yet.</p>
+          <p className="mt-2 text-sm text-gray-500">{t('common.noServicesIn', { month: formatMonth(month, lang) })}</p>
         ) : (
           <ol className="mt-2 rounded-2xl bg-white px-4 py-1 shadow-sm">
             {top.map((s, i) => (
               <li key={s.name} className="flex items-baseline gap-3 border-gray-100 py-2 not-first:border-t">
                 <span className="w-4 text-sm text-gray-400">{i + 1}</span>
-                <span className={`flex-1 truncate ${s.name ? '' : 'text-gray-500 italic'}`}>{s.name || 'Unnamed'}</span>
+                <span className={`flex-1 truncate ${s.name ? '' : 'text-gray-500 italic'}`}>{s.name || t('dashboard.unnamed')}</span>
                 <span className="text-sm text-gray-500">×{s.count}</span>
                 <span className="w-24 text-right font-semibold tabular-nums">{formatMoney(s.totalCents)}</span>
               </li>
@@ -93,23 +96,23 @@ export default function DashboardTab({ month, data }: Props) {
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold">History</h2>
+        <h2 className="text-lg font-semibold">{t('dashboard.history')}</h2>
         <div className="mt-2 overflow-x-auto rounded-2xl bg-white shadow-sm">
           <table className="w-full text-xs tabular-nums">
             <thead className="text-xs text-gray-500">
               <tr className="border-b border-gray-200">
-                <th className="py-2 pr-1 pl-3 text-left font-medium">Month</th>
-                <th className="px-1 py-2 text-right font-medium">Services</th>
-                <th className="px-1 py-2 text-right font-medium">Net</th>
-                <th className="px-1 py-2 text-right font-medium">Paid</th>
-                <th className="py-2 pr-3 pl-1 text-right font-medium">Carried</th>
+                <th className="py-2 pr-1 pl-3 text-left font-medium">{t('dashboard.colMonth')}</th>
+                <th className="px-1 py-2 text-right font-medium">{t('dashboard.colServices')}</th>
+                <th className="px-1 py-2 text-right font-medium">{t('dashboard.colNet')}</th>
+                <th className="px-1 py-2 text-right font-medium">{t('dashboard.colPaid')}</th>
+                <th className="py-2 pr-3 pl-1 text-right font-medium">{t('dashboard.colCarried')}</th>
               </tr>
             </thead>
             <tbody>
               {[...history].reverse().map((s) => (
                 <tr key={s.month} className={`border-gray-100 not-first:border-t ${s.month === month ? 'font-semibold' : ''}`}>
                   <td className="py-2 pr-1 pl-3 whitespace-nowrap">
-                    {formatMonthShort(s.month)} ’{s.month.slice(2, 4)}
+                    {formatMonthYearShort(s.month, lang)}
                   </td>
                   <Money cents={s.servicesTotalCents} />
                   <Money cents={s.netEarnedCents} />

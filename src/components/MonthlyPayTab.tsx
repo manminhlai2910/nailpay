@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { formatMonth } from '../lib/dates'
 import { formatMoney, statementForMonth, tipTotal, type Payment, type PayData } from '../lib/pay'
 import type { Profile } from '../lib/storage'
@@ -15,42 +16,41 @@ export default function MonthlyPayTab({ month, data, setPayments, profile }: Pro
   const inMonth = data.services.filter((s) => s.date.startsWith(`${month}-`))
   const statement = statementForMonth(data, month)
   const { settings } = statement
+  const { t, i18n } = useTranslation()
 
   return (
     <>
       <section className="print:hidden">
         <div className="flex items-baseline justify-between">
-          <h2 className="text-lg font-semibold">{formatMonth(month)}</h2>
+          <h2 className="text-lg font-semibold">{formatMonth(month, i18n.language)}</h2>
           <button type="button" onClick={() => window.print()} className="text-sm font-medium text-pink-600">
-            Print statement
+            {t('pay.print')}
           </button>
         </div>
         {!profile.name.trim() && !profile.salonName.trim() && (
-          <p className="text-xs text-gray-400">Add your name and salon in Settings to show them on the statement.</p>
+          <p className="text-xs text-gray-400">{t('pay.profileHint')}</p>
         )}
 
         <BalanceBanner cents={statement.carryForwardCents} />
 
         <dl className="mt-4 rounded-2xl bg-white px-4 py-2 shadow-sm">
+          <Row label={t('pay.totalServices', { count: inMonth.length })} cents={statement.servicesTotalCents} />
+          <Row label={t('pay.commission', { rate: settings.commissionRate })} cents={statement.commissionCents} />
+          <Row label={t('pay.rent')} cents={-settings.rentCents} />
+          <Row label={t('pay.netEarned')} cents={statement.netEarnedCents} strong divider />
           <Row
-            label={`Total services (${inMonth.length} service${inMonth.length === 1 ? '' : 's'})`}
-            cents={statement.servicesTotalCents}
-          />
-          <Row label={`Commission (${settings.commissionRate}%)`} cents={statement.commissionCents} />
-          <Row label="Rent" cents={-settings.rentCents} />
-          <Row label="Net earned" cents={statement.netEarnedCents} strong divider />
-          <Row
-            label={statement.isFirstMonth ? 'Starting balance' : 'Owed from last month'}
+            label={statement.isFirstMonth ? t('pay.startingBalance') : t('pay.owedLastMonth')}
             cents={statement.owedFromLastMonthCents}
           />
-          <Row label="Total due from owner" cents={statement.totalDueCents} strong divider large />
-          <Row label="Paid by owner" cents={-statement.paymentsCents} />
-          <Row label="Balance carried to next month" cents={statement.carryForwardCents} strong divider large />
+          <Row label={t('pay.totalDueFromOwner')} cents={statement.totalDueCents} strong divider large />
+          <Row label={t('pay.paidByOwner')} cents={-statement.paymentsCents} />
+          <Row label={t('pay.carryNext')} cents={statement.carryForwardCents} strong divider large />
         </dl>
 
         <p className="mt-4 text-sm text-gray-600">
-          Tips this month: <span className="font-semibold text-green-700">{formatMoney(tipTotal(inMonth))}</span>{' '}
-          <span className="text-gray-400">(not part of commission)</span>
+          {t('pay.tipsThisMonth')}{' '}
+          <span className="font-semibold text-green-700">{formatMoney(tipTotal(inMonth))}</span>{' '}
+          <span className="text-gray-400">{t('pay.tipsNote')}</span>
         </p>
 
         <PaymentsSection month={month} payments={data.payments} setPayments={setPayments} />
@@ -70,12 +70,13 @@ export default function MonthlyPayTab({ month, data, setPayments, profile }: Pro
 
 /** Where things stand at the end of the month: settled, owner owes you, or you owe the owner. */
 function BalanceBanner({ cents }: { cents: number }) {
+  const { t } = useTranslation()
   const [text, style] =
     cents === 0
-      ? ['Paid in full', 'border-green-200 bg-green-50 text-green-800']
+      ? [t('pay.paidInFull'), 'border-green-200 bg-green-50 text-green-800']
       : cents > 0
-        ? [`Owner owes you ${formatMoney(cents)}`, 'border-orange-200 bg-orange-50 text-orange-800']
-        : [`You owe the owner ${formatMoney(-cents)}`, 'border-red-200 bg-red-50 text-red-800']
+        ? [t('pay.ownerOwes', { amount: formatMoney(cents) }), 'border-orange-200 bg-orange-50 text-orange-800']
+        : [t('pay.youOwe', { amount: formatMoney(-cents) }), 'border-red-200 bg-red-50 text-red-800']
   return (
     <p role="status" className={`mt-2 rounded-2xl border px-4 py-3 text-center text-xl font-bold ${style}`}>
       {text}

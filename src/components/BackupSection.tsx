@@ -1,4 +1,6 @@
 import { useState, type ChangeEvent } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
+import { errorText } from '../i18n'
 import { backupFileName, createBackup, parseBackup, type Backup, type BackupData } from '../lib/backup'
 import { today } from '../lib/dates'
 import { downloadFile } from '../lib/download'
@@ -8,10 +10,11 @@ interface Props {
   onRestore: (data: BackupData) => void
 }
 
-const count = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
-
 /** Download all data as one JSON file, or replace all data from such a file after confirmation. */
 export default function BackupSection({ data, onRestore }: Props) {
+  const { t, i18n } = useTranslation()
+  const services = (n: number) => t('count.service', { count: n })
+  const payments = (n: number) => t('count.payment', { count: n })
   const [pending, setPending] = useState<Backup | null>(null)
   const [error, setError] = useState('')
   const [done, setDone] = useState('')
@@ -31,7 +34,7 @@ export default function BackupSection({ data, onRestore }: Props) {
       setError('')
     } catch (err) {
       setPending(null)
-      setError((err as Error).message)
+      setError(errorText(err, t))
     }
   }
 
@@ -40,26 +43,30 @@ export default function BackupSection({ data, onRestore }: Props) {
     const { exportedAt: _exportedAt, ...restored } = pending
     onRestore(restored)
     setPending(null)
-    setDone(`Restored ${count(restored.services.length, 'service')} and ${count(restored.payments.length, 'payment')}.`)
+    setDone(
+      t('backup.restored', {
+        services: services(restored.services.length),
+        payments: payments(restored.payments.length),
+      }),
+    )
   }
 
   const exported = pending?.exportedAt ? new Date(pending.exportedAt) : null
+  const exportedValid = exported !== null && !isNaN(exported.getTime())
 
   return (
     <section className="mt-4 space-y-4 rounded-2xl bg-white p-4 shadow-sm">
       <div>
-        <h2 className="font-semibold">Backup</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          Your data lives only in this browser. Download a backup now and then, and keep it somewhere safe.
-        </p>
+        <h2 className="font-semibold">{t('backup.title')}</h2>
+        <p className="mt-1 text-sm text-gray-500">{t('backup.desc')}</p>
       </div>
 
       <div className="flex gap-2">
         <button type="button" onClick={backUp} className="flex-1 rounded-lg bg-pink-600 py-2 font-medium text-white">
-          Download backup
+          {t('backup.download')}
         </button>
         <label className="flex-1 cursor-pointer rounded-lg border border-gray-300 py-2 text-center font-medium text-gray-700 focus-within:border-pink-600">
-          Restore from backup
+          {t('backup.restore')}
           <input type="file" accept=".json,application/json" onChange={pickFile} className="sr-only" />
         </label>
       </div>
@@ -70,27 +77,33 @@ export default function BackupSection({ data, onRestore }: Props) {
       {pending && (
         <div className="space-y-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm">
           <p>
-            Replace <span className="font-semibold">everything</span> in NailPay (
-            {count(data.services.length, 'service')}, {count(data.payments.length, 'payment')}, and your settings) with
-            this backup
-            {exported && !isNaN(exported.getTime()) && <> from {exported.toLocaleString()}</>} (
-            {count(pending.services.length, 'service')}, {count(pending.payments.length, 'payment')})?
+            <Trans
+              i18nKey={exportedValid ? 'backup.confirmFrom' : 'backup.confirm'}
+              values={{
+                currentServices: services(data.services.length),
+                currentPayments: payments(data.payments.length),
+                services: services(pending.services.length),
+                payments: payments(pending.payments.length),
+                date: exportedValid ? exported.toLocaleString(i18n.language) : '',
+              }}
+              components={{ b: <span className="font-semibold" /> }}
+            />
           </p>
-          <p className="font-medium text-red-700">Your current data will be lost. This can't be undone.</p>
+          <p className="font-medium text-red-700">{t('backup.lost')}</p>
           <div className="flex gap-2">
             <button
               type="button"
               onClick={restore}
               className="flex-1 rounded-lg bg-red-600 py-2 font-medium text-white"
             >
-              Yes, replace my data
+              {t('backup.yesReplace')}
             </button>
             <button
               type="button"
               onClick={() => setPending(null)}
               className="flex-1 rounded-lg border border-gray-300 bg-white py-2 font-medium text-gray-700"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
         </div>
