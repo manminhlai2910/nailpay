@@ -41,3 +41,9 @@ export function addMonths(month: string, n: number): string {
   const total = y * 12 + (m - 1) + n
   return `${Math.floor(total / 12)}-${pad((total % 12) + 1)}`
 }
+
+/** "2026-10" -> "Oct 2026" */
+export function formatMonthYearShort(month: string): string {
+  const [y, m] = month.split('-').map(Number)
+  return new Date(y, m - 1).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
+}

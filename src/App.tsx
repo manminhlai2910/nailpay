@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import DashboardTab from './components/DashboardTab'
+import ImportCsv from './components/ImportCsv'
 import MonthlyPayTab from './components/MonthlyPayTab'
 import ServicesTab from './components/ServicesTab'
 import SettingsTab from './components/SettingsTab'
@@ -88,6 +89,7 @@ export default function App() {
             onStartingBalanceChange={setStartingBalance}
           />
         )}
+        {tab === 'Settings' && <ImportCsv services={services} setServices={setServices} />}
       </main>
     </div>
   )
