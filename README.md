@@ -63,7 +63,7 @@ All money is stored as integer cents to avoid floating-point rounding errors. Th
 You need [Node.js](https://nodejs.org/) 22 or newer.
 
 ```bash
-git clone <this-repo-url>
+git clone https://github.com/manminhlai2910/nailpay.git
 cd nailpay
 npm install
 npm run dev
