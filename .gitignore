@@ -1,4 +1,17 @@
+# Dependencies and build output
 node_modules
 dist
+*.tsbuildinfo
 *.local
 .DS_Store
+
+# Secrets
+.env*
+
+# Real pay data: exports and backups stay on your machine
+*.csv
+nailpay-backup-*.json
+
+# Fake data, safe to share
+!test-import.csv
+!sample-data.md
